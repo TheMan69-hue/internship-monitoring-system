@@ -44,10 +44,10 @@ export function generateCalendar(studentProfile, referenceDate = new Date()) {
 
       let status = 'present'
 
-      if (!isWithinMonth) {
+      if (attendanceStatus) {
+        status = !isWithinMonth ? 'recorded-outside' : attendanceStatus === 'present' ? 'recorded' : attendanceStatus
+      } else if (!isWithinMonth) {
         status = 'outside'
-      } else if (attendanceStatus) {
-        status = attendanceStatus
       } else if (isCurrentDay) {
         status = 'current'
       } else if (daysOff.includes(dayOfWeek)) {

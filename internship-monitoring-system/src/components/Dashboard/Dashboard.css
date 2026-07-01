@@ -199,8 +199,15 @@
 }
 
 .calendar-tile--recorded {
-  background: linear-gradient(180deg, #88bf68 0%, #94c976 100%);
+  background: #8dc07a;
 }
+
+.calendar-tile--recorded-outside {
+  background: #8dc07a;
+  opacity: 0.45; /* Makes it look faint/greyed out while preserving the green hue */
+}
+
+
 
 .calendar-tile--current {
   border: 4px solid transparent;
@@ -221,7 +228,7 @@
 }
 
 .calendar-tile--recorded .calendar-number {
-  color: rgba(255, 255, 255, 0.35);
+  color: #9BD487;
 }
 
 .calendar-tile--absent .calendar-number {
@@ -393,12 +400,5 @@
     width: min(100%, 320px);
   }
 
-  .calendar-tile--present {
-  background-color: #8DC07A; /* green */
-}
-
-.calendar-tile--absent {
-  background-color: #FF6B6B; /* red */
-}
 
 }
