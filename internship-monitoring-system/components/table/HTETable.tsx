@@ -53,7 +53,7 @@ export default function HTETable({
               </td>
 
               <td className="px-6 py-4 text-center text-[#374151]">
-                {hte.interns}
+                {hte.currentInterns}
               </td>
 
             </tr>

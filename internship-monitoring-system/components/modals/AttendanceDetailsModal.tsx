@@ -1,20 +1,20 @@
 "use client";
 
-import type { HTE } from "@/lib/types";
+import type { AttendanceLog } from "@/lib/types";
 import Modal from "./Modal";
 
-type HTEDetailsModalProps = {
-  hte: HTE;
+type AttendanceDetailsModalProps = {
+  attendance: AttendanceLog;
   onClose: () => void;
 };
 
-export default function HTEDetailsModal({
-  hte,
+export default function AttendanceDetailsModal({
+  attendance,
   onClose,
-}: HTEDetailsModalProps) {
+}: AttendanceDetailsModalProps) {
   return (
     <Modal
-      title="HTE Details"
+      title="Attendance Details"
       onClose={onClose}
     >
       {/* Content */}
@@ -22,91 +22,103 @@ export default function HTEDetailsModal({
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Company Name
+            Student Number
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.company}
+            {attendance.studentNumber}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Contact Person
+            Student Name
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.contactPerson}
+            {attendance.studentName}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Address
+            Program
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.address}
+            {attendance.program}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Contact Number
+            Section
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.phone}
+            {attendance.section}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Email
+            Assigned HTE
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.email}
+            {attendance.hte}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Current Interns
+            Attendance Date
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.currentInterns}
+            {attendance.date}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Work Schedule
+            Time In
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.workSchedule}
+            {attendance.timeIn}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Working Hours
+            Time Out
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.workingHours}
+            {attendance.timeOut}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
+            Location
+          </p>
+          <p className="mt-1 text-base font-medium text-[#111827]">
+            {attendance.location}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
+            Remarks
+          </p>
+          <p className="mt-1 text-base font-medium text-[#111827]">
+            {attendance.remarks}
           </p>
         </div>
 
       </div>
 
       {/* Footer */}
-      <div className="flex justify-end gap-3 border-t bg-[#F9FAFB] px-6 py-4">
+      <div className="flex justify-end border-t bg-[#F9FAFB] px-6 py-4">
 
         <button
-          className="rounded-[10px] border border-[#D1D5DB] bg-white px-5 py-2 text-[#374151] transition hover:bg-[#F3F4F6]"
+          className="rounded-[10px] bg-[#2563EB] px-5 py-2 text-white transition hover:bg-[#1D4ED8]"
         >
-          Edit
-        </button>
-
-        <button
-          className="rounded-[10px] bg-[#DC2626] px-5 py-2 text-white transition hover:bg-[#B91C1C]"
-        >
-          Delete
+          View on Map
         </button>
 
       </div>
