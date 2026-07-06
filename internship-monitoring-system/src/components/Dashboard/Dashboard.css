@@ -52,11 +52,19 @@
 .avatar {
   width: 36px;
   height: 36px;
+  border: 0;
   border-radius: 999px;
   background: #fff;
   display: grid;
   place-items: center;
   flex: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.avatar:focus-visible {
+  outline: 3px solid rgba(0, 0, 0, 0.7);
+  outline-offset: 3px;
 }
 
 .avatar svg,
@@ -198,6 +206,14 @@
   background: linear-gradient(180deg, #cc3a3a 0%, #a91f1f 100%);
 }
 
+.calendar-tile--late {
+  background: linear-gradient(180deg, #f0c84a 0%, #d79c18 100%);
+}
+
+.calendar-tile--excused {
+  background: linear-gradient(180deg, #6fb5d8 0%, #357da5 100%);
+}
+
 .calendar-tile--recorded {
   background: #8dc07a;
 }
@@ -233,6 +249,11 @@
 
 .calendar-tile--absent .calendar-number {
   color: rgba(255, 255, 255, 0.78);
+}
+
+.calendar-tile--late .calendar-number,
+.calendar-tile--excused .calendar-number {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .calendar-tile--current .calendar-number {
@@ -285,6 +306,12 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
+.time-button:disabled {
+  cursor: wait;
+  opacity: 0.8;
+  transform: none;
+}
+
 .time-button:focus-visible {
   outline: 3px solid rgba(0, 0, 0, 0.7);
   outline-offset: 4px;
@@ -329,6 +356,19 @@
 .time-action--active .time-button__timer {
   opacity: 1;
   transform: translateY(0);
+}
+
+.attendance-message {
+  width: min(100%, 360px);
+  margin: -8px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #9b1c1c;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 @media (max-width: 700px) {
