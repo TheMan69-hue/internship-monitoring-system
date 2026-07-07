@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { supabase } from '../../supabaseClient'
-import { getCurrentLocation } from '../../utils/geolocation'
+import { getCurrentLocation, reverseGeocodeLocation } from '../../utils/geolocation'
 
 function getAttendanceMessage(error) {
   if (error?.code === error?.PERMISSION_DENIED) {
@@ -42,9 +42,20 @@ function AttendanceTracker({ clockNow }) {
 
     try {
       const location = await getCurrentLocation()
+      let locationNameIn = null
+
+      if (action === 'Time-in') {
+        try {
+          locationNameIn = await reverseGeocodeLocation(location)
+        } catch (error) {
+          console.warn('Failed to fetch location name:', error)
+        }
+      }
+
       const { data, error } = await supabase.rpc('record_student_attendance', {
         p_action: action,
         p_location: location,
+        p_location_name_in: locationNameIn,
       })
 
       if (error) {

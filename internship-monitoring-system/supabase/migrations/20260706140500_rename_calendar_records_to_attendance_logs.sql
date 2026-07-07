@@ -13,6 +13,7 @@ create table if not exists public.attendance_logs (
   time_in timestamptz,
   time_out timestamptz,
   location jsonb,
+  location_name_in text,
   status text not null check (status in ('present', 'absent', 'late', 'excused')),
   created_at timestamptz not null default now(),
   unique (student_id, date)
@@ -58,6 +59,7 @@ alter table public.attendance_logs
   add column if not exists time_in timestamptz,
   add column if not exists time_out timestamptz,
   add column if not exists location jsonb,
+  add column if not exists location_name_in text,
   add column if not exists created_at timestamptz not null default now();
 
 alter table public.attendance_logs
@@ -163,9 +165,12 @@ $$;
 
 grant execute on function public.get_latest_student_attendance_logs() to anon, authenticated;
 
+drop function if exists public.record_student_attendance(text, jsonb);
+
 create or replace function public.record_student_attendance(
   p_action text,
-  p_location jsonb
+  p_location jsonb,
+  p_location_name_in text default null
 )
 returns public.attendance_logs
 language plpgsql
@@ -204,12 +209,13 @@ begin
   end if;
 
   if v_action = 'time_in' then
-    insert into public.attendance_logs (student_id, date, time_in, location, status)
+    insert into public.attendance_logs (student_id, date, time_in, location, location_name_in, status)
     values (
       v_student_id,
       current_date,
       now(),
       jsonb_build_object('time_in', p_location),
+      p_location_name_in,
       'present'
     )
     on conflict (student_id, date)
@@ -217,6 +223,7 @@ begin
       time_in = coalesce(public.attendance_logs.time_in, excluded.time_in),
       location = coalesce(public.attendance_logs.location, '{}'::jsonb)
         || jsonb_build_object('time_in', p_location),
+      location_name_in = coalesce(public.attendance_logs.location_name_in, excluded.location_name_in),
       status = 'present'
     returning *
     into v_log;
@@ -244,4 +251,4 @@ begin
 end;
 $$;
 
-grant execute on function public.record_student_attendance(text, jsonb) to authenticated;
+grant execute on function public.record_student_attendance(text, jsonb, text) to authenticated;

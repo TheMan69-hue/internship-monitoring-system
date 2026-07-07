@@ -23,6 +23,7 @@ create table if not exists public.attendance_logs (
   time_in timestamptz,
   time_out timestamptz,
   location jsonb,
+  location_name_in text,
   status text not null check (status in ('present', 'absent', 'late', 'excused')),
   created_at timestamptz not null default now(),
   unique (student_id, date)
