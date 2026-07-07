@@ -8,7 +8,7 @@ import DataTable from "@/components/table/DataTable";
 import {
   attendanceColumns,
   attendanceLogs,
-} from "@/lib/attendance";
+} from "@/lib/data/attendance";
 
 import type { AttendanceLog } from "@/lib/types";
 

@@ -1,4 +1,4 @@
-import type { HTE } from "./types";
+import type { HTE } from "../types";
 export const hteData: HTE[] = [
   {
     id: 1,

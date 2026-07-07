@@ -1,7 +1,7 @@
 import type {
   RegistrationStatus,
   Student,
-} from "./types";
+} from "../types";
 export const registrationStudents: {
   id: number;
   program: string;

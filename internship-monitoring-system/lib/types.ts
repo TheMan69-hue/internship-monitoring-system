@@ -1,11 +1,30 @@
 export type RegistrationStatus =
+  | "Pending"
   | "Approved"
-  | "Pending";
+  | "Rejected";
 
 export type InternshipStatus =
   | "Active"
   | "Completed";
+export interface StudentRegistration {
+  id: number;
 
+  studentNumber: string;
+
+  name: string;
+
+  program: string;
+
+  section: string;
+
+  email: string;
+
+  contactNumber: string;
+
+  hte: string;
+
+  registrationStatus: "Pending" | "Rejected";
+}
 export interface Student {
   id: number;
   studentNumber: string;

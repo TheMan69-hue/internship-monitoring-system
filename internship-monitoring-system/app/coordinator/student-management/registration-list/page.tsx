@@ -1,12 +1,18 @@
 "use client";
 import { useState } from "react";
-import { registrationColumns, registrationStudents } from "@/lib/student";
+import {
+  registrationColumns,
+  registrationStudents,
+} from "@/lib/data/registration";
+import RegistrationDetailsModal from "@/components/modals/RegistrationDetailsModal";
 import SearchBar from "@/components/search/SearchBar";
 import DataTable from "@/components/table/DataTable";
 import StatusBadge from "@/components/ui/StatusBadge";
 
 export default function RegistrationListPage() {
     const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
+    const [selectedStudent, setSelectedStudent] =
+      useState<(typeof registrationStudents)[0] | null>(null);
     const allSelected =
         selectedStudents.length === registrationStudents.length;
         const handleSelectAll = () => {
@@ -88,6 +94,7 @@ export default function RegistrationListPage() {
 
           <tr
             key={student.id}
+            onClick={() => setSelectedStudent(student)}
             className="cursor-pointer border-t transition-colors hover:bg-[#F3F4F6]"
           >
 
@@ -115,6 +122,7 @@ export default function RegistrationListPage() {
               <input
                     type="checkbox"
                     checked={selectedStudents.includes(student.id)}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={() => handleSelectStudent(student.id)}
                     className="h-4 w-4 rounded border-[#D1D5DB]"
               />
@@ -144,10 +152,25 @@ export default function RegistrationListPage() {
                 Accept
                 </button>
                 <button className="rounded-lg bg-[#DC2626] px-5 py-2 text-white hover:bg-[#B91C1C]">
-                Cancel
+                Reject
                 </button>
             </div>
+            
         </div>
+      {selectedStudent && (
+      <RegistrationDetailsModal
+        student={selectedStudent}
+        onClose={() => setSelectedStudent(null)}
+        onApprove={() => {
+          console.log("Approve", selectedStudent.name);
+          setSelectedStudent(null);
+        }}
+        onReject={() => {
+          console.log("Reject", selectedStudent.name);
+          setSelectedStudent(null);
+        }}
+      />
+    )}
 
     </div>
   );

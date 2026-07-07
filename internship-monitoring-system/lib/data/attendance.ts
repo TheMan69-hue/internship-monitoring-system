@@ -1,4 +1,4 @@
-import type { AttendanceLog } from "./types";
+import type { AttendanceLog } from "../types";
 export const attendanceColumns = [
   {
     key: "studentNumber",

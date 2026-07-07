@@ -32,6 +32,10 @@ export const coordinatorMenu: NavigationItem[] = [
         href: "/coordinator/student-management/registration-list",
       },
       {
+        title: "Rejected Applications",
+        href: "/coordinator/student-management/rejected-applications",
+      },
+      {
         title: "Student List",
         href: "/coordinator/student-management/student-list",
       },

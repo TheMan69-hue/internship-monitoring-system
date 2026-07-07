@@ -8,9 +8,9 @@ import DataTable from "@/components/table/DataTable";
 import StudentDetailsModal from "@/components/modals/StudentDetailsModal";
 
 import {
-    studentColumns,
-    studentList,
-} from "@/lib/student";
+  studentColumns,
+  studentList,
+} from "@/lib/data/students";
 
 import type { Student } from "@/lib/types";
 export default function StudentListPage() {
