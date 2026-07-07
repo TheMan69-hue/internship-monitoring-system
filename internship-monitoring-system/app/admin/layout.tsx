@@ -14,7 +14,7 @@ export default function AdminLayout({
 
   return (
     <div>
-      <header className="bg-white py-1">
+      <header className="bg-white py-1 border-b-slate-200 border-b-1">
         <div className="flex justify-between items-center px-4">
           <button
             type="button"
