@@ -24,6 +24,7 @@ function App() {
     function applyStudentProfile(data) {
       setProfile((previousProfile) => ({
         ...previousProfile,
+        id: data.id ?? previousProfile.id,
         name: data.name,
         studentNumber: data.student_number,
         program: data.program,
@@ -131,6 +132,41 @@ function App() {
     }
   }, [])
 
+  const handleProfileSave = async ({ name, phoneNumber, emailAddress }) => {
+    if (!profile.id) {
+      throw new Error('No student profile is available to update.')
+    }
+
+    const { data, error } = await supabase
+      .from('students')
+      .update({
+        name,
+        phone_number: phoneNumber,
+        email_address: emailAddress,
+      })
+      .eq('id', profile.id)
+      .select('id, student_number, name, program, section, phone_number, email_address, current_location')
+      .maybeSingle()
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    if (data) {
+      setProfile((previousProfile) => ({
+        ...previousProfile,
+        id: data.id,
+        name: data.name,
+        studentNumber: data.student_number,
+        program: data.program,
+        section: data.section,
+        phoneNumber: data.phone_number,
+        emailAddress: data.email_address,
+        location: data.current_location || previousProfile.location,
+      }))
+    }
+  }
+
   const openProfile = () => {
     window.location.hash = 'profile'
     setCurrentPage('profile')
@@ -145,9 +181,11 @@ function App() {
   if (currentPage === 'profile') {
     return (
       <ProfileSettings
+        key={`${profile.id ?? profile.studentNumber ?? profile.name}`}
         activePanel={activeProfilePanel}
         onLogout={handleLogout}
         onPanelChange={setActiveProfilePanel}
+        onSaveProfile={handleProfileSave}
         studentProfile={profile}
       />
     )

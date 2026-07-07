@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import './ProfileSettings.css'
 
 const avatarPath =
@@ -12,18 +13,42 @@ function DetailRow({ label, value }) {
   )
 }
 
-function ProfileSettings({ activePanel, onPanelChange, onLogout, studentProfile }) {
+function EditableField({ label, name, value, onChange, type = 'text', onEdit, isEditing }) {
+  return (
+    <div className="profile-detail-row profile-detail-row--editable">
+      <span>{label}:</span>
+      {isEditing ? (
+        <input
+          className="profile-detail-row__input"
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          autoComplete={name}
+        />
+      ) : (
+        <strong>{value || '-'}</strong>
+      )}
+      <button type="button" className="profile-edit-button" onClick={onEdit} aria-label={`Edit ${label}`}>
+        <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+          <path d="M3 17.3V21h3.7L18.8 8.9l-3.7-3.7L3 17.3Zm18-10.8a1 1 0 0 0 0-1.4l-2.1-2.1a1 1 0 0 0-1.4 0l-1.6 1.6 3.7 3.7 1.4-1.8Z" />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, studentProfile }) {
   const isProfilePanel = activePanel === 'profile'
   const hte = studentProfile.hte ?? {}
-
-  const profileRows = [
-    ['Name', studentProfile.name],
-    ['Student Number', studentProfile.studentNumber],
-    ['Program', studentProfile.program],
-    ['Section', studentProfile.section],
-    ['Phone Number', studentProfile.phoneNumber],
-    ['Email Address', studentProfile.emailAddress],
-  ]
+  const [formValue, setFormValue] = useState({
+    name: studentProfile.name ?? '',
+    phoneNumber: studentProfile.phoneNumber ?? '',
+    emailAddress: studentProfile.emailAddress ?? '',
+  })
+  const [editingField, setEditingField] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState('')
 
   const hteRows = [
     ['Name', hte.name],
@@ -31,6 +56,56 @@ function ProfileSettings({ activePanel, onPanelChange, onLogout, studentProfile 
     ['Time Completion', hte.timeCompletion],
     ['Work Schedule', hte.workSchedule],
     ['Working Time (Daily)', hte.workingTime],
+  ]
+
+  const handleFieldChange = (event) => {
+    const { name, value } = event.target
+
+    setFormValue((previousValue) => ({
+      ...previousValue,
+      [name]: value,
+    }))
+  }
+
+  const handleSave = async (event) => {
+    event.preventDefault()
+    setIsSaving(true)
+    setSaveMessage('')
+
+    try {
+      await onSaveProfile({
+        name: formValue.name.trim(),
+        phoneNumber: formValue.phoneNumber.trim(),
+        emailAddress: formValue.emailAddress.trim(),
+      })
+
+      setSaveMessage('Profile saved successfully.')
+    } catch (error) {
+      setSaveMessage(error?.message || 'Unable to save profile changes.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const editableRows = [
+    {
+      label: 'Name',
+      name: 'name',
+      value: formValue.name,
+      type: 'text',
+    },
+    {
+      label: 'Phone Number',
+      name: 'phoneNumber',
+      value: formValue.phoneNumber,
+      type: 'tel',
+    },
+    {
+      label: 'Email Address',
+      name: 'emailAddress',
+      value: formValue.emailAddress,
+      type: 'email',
+    },
   ]
 
   return (
@@ -42,7 +117,7 @@ function ProfileSettings({ activePanel, onPanelChange, onLogout, studentProfile 
               <path d={avatarPath} />
             </svg>
           </div>
-          <strong>{studentProfile.role}</strong>
+          <strong>{studentProfile.name}</strong>
         </div>
 
         <nav className="profile-tabs" aria-label="Profile sections">
@@ -73,11 +148,40 @@ function ProfileSettings({ activePanel, onPanelChange, onLogout, studentProfile 
       <section className="profile-settings-content" aria-label={isProfilePanel ? 'Profile details' : 'HTE details'}>
         <div className="profile-detail-card">
           <h1>{isProfilePanel ? 'Profile Details' : 'HTE Details'}</h1>
-          <div className="profile-detail-list">
-            {(isProfilePanel ? profileRows : hteRows).map(([label, value]) => (
-              <DetailRow key={label} label={label} value={value} />
-            ))}
-          </div>
+          {isProfilePanel ? (
+            <form className="profile-detail-form" onSubmit={handleSave}>
+              <div className="profile-detail-list profile-detail-list--profile" aria-label="Profile details">
+                <DetailRow label="Student Number" value={studentProfile.studentNumber} />
+                <DetailRow label="Program" value={studentProfile.program} />
+                <DetailRow label="Section" value={studentProfile.section} />
+                {editableRows.map((row) => (
+                  <EditableField
+                    key={row.name}
+                    label={row.label}
+                    name={row.name}
+                    value={row.value}
+                    type={row.type}
+                    onChange={handleFieldChange}
+                    onEdit={() => setEditingField(row.name)}
+                    isEditing={editingField === row.name}
+                  />
+                ))}
+              </div>
+
+              <div className="profile-actions">
+                <button type="submit" className="profile-save" disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                {saveMessage ? <p className="profile-save-status" role="status">{saveMessage}</p> : null}
+              </div>
+            </form>
+          ) : (
+            <div className="profile-detail-list">
+              {hteRows.map(([label, value]) => (
+                <DetailRow key={label} label={label} value={value} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </main>

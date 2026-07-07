@@ -2,10 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import './Dashboard.css'
 import { studentProfile as defaultStudentProfile } from '../../data/studentProfile'
 import { generateCalendar } from '../../utils/generateCalendar'
+import { getCurrentLocation, reverseGeocodeLocation } from '../../utils/geolocation'
 import AttendanceTracker from './AttendanceTracker'
 
 function Dashboard({ onOpenProfile, studentProfile = defaultStudentProfile }) {
   const [clockNow, setClockNow] = useState(new Date())
+  const [liveLocation, setLiveLocation] = useState('')
+  const [gpsPermissionState, setGpsPermissionState] = useState('prompt')
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -13,6 +16,66 @@ function Dashboard({ onOpenProfile, studentProfile = defaultStudentProfile }) {
     }, 1000)
 
     return () => window.clearInterval(intervalId)
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadLiveLocationPreview() {
+      try {
+        if (navigator.permissions?.query) {
+          const permissionStatus = await navigator.permissions.query({ name: 'geolocation' })
+
+          if (!isMounted) {
+            return
+          }
+
+          setGpsPermissionState(permissionStatus.state)
+
+          if (permissionStatus.state === 'denied') {
+            return
+          }
+        }
+
+        const location = await getCurrentLocation()
+
+        if (!isMounted) {
+          return
+        }
+
+        try {
+          const locationLabel = await reverseGeocodeLocation(location)
+
+          if (isMounted) {
+            setLiveLocation(locationLabel)
+          }
+        } catch (reverseGeocodeError) {
+          console.warn('Failed to resolve live location preview:', reverseGeocodeError)
+
+          if (isMounted) {
+            setLiveLocation(`${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`)
+          }
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return
+        }
+
+        if (error?.code === 1) {
+          setGpsPermissionState('denied')
+          setLiveLocation('GPS access blocked')
+          return
+        }
+
+        setLiveLocation('Unable to load live location')
+      }
+    }
+
+    loadLiveLocationPreview()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const displayTime = useMemo(
@@ -45,7 +108,7 @@ function Dashboard({ onOpenProfile, studentProfile = defaultStudentProfile }) {
               <path d="M12 13.2c-3.2 0-5.8 2.6-5.8 5.8v1h11.6v-1c0-3.2-2.6-5.8-5.8-5.8Zm0-1.8a4.5 4.5 0 1 0 0-9 4.5 4.5 4.5 0 0 0 0 9Z" />
             </svg>
           </button>
-          <span className="role-label">{studentProfile.role}</span>
+          <span className="role-label">{studentProfile.name}</span>
         </div>
 
         <div className="status-group">
@@ -53,7 +116,7 @@ function Dashboard({ onOpenProfile, studentProfile = defaultStudentProfile }) {
             <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
               <path d="M12 2.5a8.5 8.5 0 0 0-8.5 8.5c0 6.3 8.5 10.5 8.5 10.5S20.5 17.3 20.5 11A8.5 8.5 0 0 0 12 2.5Zm0 11.2a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4Z" />
             </svg>
-            <span>{studentProfile.location}</span>
+            <span>{liveLocation || (gpsPermissionState === 'denied' ? 'GPS access blocked' : studentProfile.location)}</span>
           </div>
 
           <div className="timestamp" aria-label={`Server synchronized time ${displayTime}, ${displayDate}`}>
@@ -88,7 +151,7 @@ function Dashboard({ onOpenProfile, studentProfile = defaultStudentProfile }) {
         </div>
       </section>
 
-      <AttendanceTracker clockNow={clockNow} />
+      <AttendanceTracker clockNow={clockNow} gpsPermissionState={gpsPermissionState} />
     </main>
   )
 }

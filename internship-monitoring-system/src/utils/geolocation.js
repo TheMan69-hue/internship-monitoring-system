@@ -44,7 +44,7 @@ export function getCurrentLocation(options = {}) {
 }
 
 function getReadableAddress(address = {}, displayName = '') {
-  // 1. Identify the Point of Interest (POI) or specific building/landmark
+  // Identify the Point of Interest (POI) or specific building/landmark
   const poi = address.amenity || 
               address.building || 
               address.shop || 
@@ -53,14 +53,14 @@ function getReadableAddress(address = {}, displayName = '') {
               address.leisure ||
               address.railway;
 
-  // 2. Identify the closest thoroughfare (Road/Street Number)
+  // Identify the closest thoroughfare (Road/Street Number)
   const street = address.road || address.suburb;
 
-  // 3. Keep your existing city/province variables as fallbacks
+  // Keep your existing city/province variables as fallbacks
   const city = address.city || address.municipality || address.town || address.village;
   const province = address.state || address.region || address.province;
 
-  // 4. Build a highly descriptive address hierarchy
+  // Build a highly descriptive address hierarchy
   // Prioritize: POI -> Street -> City -> Province
   if (poi) {
     return [poi, street, city].filter(Boolean).join(', ');

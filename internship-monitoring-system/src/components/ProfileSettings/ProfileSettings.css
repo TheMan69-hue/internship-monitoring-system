@@ -117,6 +117,11 @@
   gap: 12px;
 }
 
+.profile-detail-form {
+  display: grid;
+  gap: 18px;
+}
+
 .profile-detail-row {
   min-height: 32px;
   width: min(100%, 350px);
@@ -138,6 +143,84 @@
 .profile-detail-row strong {
   color: #111111;
   font-weight: 400;
+}
+
+.profile-detail-row--editable {
+  gap: 8px;
+}
+
+.profile-detail-row__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #111111;
+  font: inherit;
+  font-weight: 400;
+  outline: none;
+}
+
+.profile-detail-row__input::placeholder {
+  color: #9d9d9d;
+}
+
+.profile-edit-button {
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(18, 152, 255, 0.1);
+  color: #11742e;
+  display: grid;
+  place-items: center;
+  flex: none;
+  cursor: pointer;
+}
+
+.profile-edit-button svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.profile-detail-list--profile .profile-detail-row:nth-child(1),
+.profile-detail-list--profile .profile-detail-row:nth-child(2),
+.profile-detail-list--profile .profile-detail-row:nth-child(3),
+.profile-detail-list--profile .profile-detail-row:nth-child(4),
+.profile-detail-list--profile .profile-detail-row:nth-child(5),
+.profile-detail-list--profile .profile-detail-row:nth-child(6) {
+  width: min(100%, 350px);
+}
+
+.profile-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.profile-save {
+  min-height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #11742e 0%, #0f5c24 100%);
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+.profile-save:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.profile-save-status {
+  margin: 0;
+  color: #0f5c24;
+  font-size: 0.94rem;
+  font-weight: 700;
 }
 
 @media (max-width: 760px) {
@@ -183,6 +266,10 @@
   }
 
   .profile-detail-row {
+    width: 100%;
+  }
+
+  .profile-detail-list--profile .profile-detail-row {
     width: 100%;
   }
 }
