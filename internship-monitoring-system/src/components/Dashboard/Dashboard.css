@@ -71,7 +71,7 @@
 .location-pill svg {
   width: 22px;
   height: 22px;
-  fill: #232126;
+  fill: #d30a0a;
 }
 
 .role-label {
@@ -88,7 +88,7 @@
 
 .location-pill {
   gap: 8px;
-  color: #111;
+  color: #ffffff;
   font-size: 1.05rem;
   font-weight: 700;
   white-space: nowrap;
@@ -104,7 +104,7 @@
   flex-direction: column;
   align-items: flex-end;
   line-height: 0.95;
-  color: #111;
+  color: #ffffff;
   white-space: nowrap;
 }
 
@@ -140,7 +140,7 @@
 .tracker-card h1 {
   margin: 0;
   text-align: center;
-  color: #b6b6b6;
+  color: #09501e;
   font-size: clamp(2.15rem, 4vw, 3rem);
   font-weight: 800;
   letter-spacing: -0.06em;

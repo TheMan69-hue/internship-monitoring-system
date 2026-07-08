@@ -138,7 +138,7 @@ if (isTimedIn && timeOutAvailableAt) {
   
         // Use local client time ONLY to anchor the visual 1-hour UI lock
         const localNow = new Date();
-        const localTimeOutAvailable = new Date(localNow.getTime() + 10 * 60 * 1000);
+        const localTimeOutAvailable = new Date(localNow.getTime() + 60 * 60 * 1000);
 
         setAttendanceState({
         timeInAt: serverTimeIn.toISOString(), // Kept as server time for elapsedTime counter
@@ -172,6 +172,11 @@ if (isTimedIn && timeOutAvailableAt) {
       {!isTimedIn && isGpsBlocked ? (
         <p className="attendance-message" role="status">
           Allow GPS access to enable time in.
+        </p>
+      ) : null}
+      {isTimeOutLocked && timeOutLockRemaining ? (
+        <p className="attendance-message" role="status">
+          Time out unlocks in {timeOutLockRemaining}.
         </p>
       ) : null}
       {attendanceMessage ? (

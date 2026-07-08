@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import AuthPage from './components/Auth/AuthPage'
 import Dashboard from './components/Dashboard/Dashboard'
 import ProfileSettings from './components/ProfileSettings/ProfileSettings'
 import { studentProfile } from './data/studentProfile'
@@ -8,6 +9,43 @@ function App() {
   const [currentPage, setCurrentPage] = useState(() => (window.location.hash === '#profile' ? 'profile' : 'dashboard'))
   const [activeProfilePanel, setActiveProfilePanel] = useState('profile')
   const [profile, setProfile] = useState(studentProfile)
+  const [session, setSession] = useState(null)
+  const [isInitializingAuth, setIsInitializingAuth] = useState(true)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false)
+  const [isAuthBusy, setIsAuthBusy] = useState(false)
+  const [authMode, setAuthMode] = useState('sign-in')
+  const [authNotice, setAuthNotice] = useState('')
+  const [requiresProfileCompletion, setRequiresProfileCompletion] = useState(false)
+
+  function applyStudentProfile(data) {
+    setProfile((previousProfile) => ({
+      ...previousProfile,
+      name: data.name,
+      role: previousProfile.role || 'Intern',
+      studentNumber: data.student_number,
+      program: data.program,
+      section: data.section,
+      phoneNumber: data.phone_number,
+      emailAddress: data.email_address,
+      location: data.current_location || previousProfile.location,
+      hte: {
+        ...previousProfile.hte,
+        name: data.hte || previousProfile.hte?.name,
+      },
+    }))
+  }
+
+  function applyCalendarRecords(records) {
+    const attendance = Object.fromEntries(records.map((record) => [record.date, record.status]))
+
+    setProfile((previousProfile) => ({
+      ...previousProfile,
+      schedule: {
+        ...previousProfile.schedule,
+        attendance,
+      },
+    }))
+  }
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -21,108 +59,102 @@ function App() {
   useEffect(() => {
     let isMounted = true
 
-    function applyStudentProfile(data) {
-      setProfile((previousProfile) => ({
-        ...previousProfile,
-        id: data.id ?? previousProfile.id,
-        name: data.name,
-        studentNumber: data.student_number,
-        program: data.program,
-        section: data.section,
-        phoneNumber: data.phone_number,
-        emailAddress: data.email_address,
-        location: data.current_location || previousProfile.location,
-      }))
-    }
-
-    function applyCalendarRecords(records) {
-      const attendance = Object.fromEntries(
-        records.map((record) => [record.date, record.status]),
-      )
-
-      setProfile((previousProfile) => ({
-        ...previousProfile,
-        schedule: {
-          ...previousProfile.schedule,
-          attendance,
-        },
-      }))
-    }
-
-    async function loadStudentProfile() {
+    async function initializeAuth() {
       const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser()
+        data: { session: currentSession },
+        error,
+      } = await supabase.auth.getSession()
 
-      if (userError) {
-        console.warn('Unable to check Supabase auth session:', userError.message)
+      if (error) {
+        console.warn('Unable to initialize Supabase auth:', error.message)
       }
 
       if (!isMounted) {
         return
       }
 
-      if (user) {
-        const { data, error } = await supabase
-          .from('students')
-          .select('id, student_number, name, program, section, phone_number, email_address, current_location')
-          .eq('user_id', user.id)
-          .maybeSingle()
+      setSession(currentSession ?? null)
+      setIsInitializingAuth(false)
+    }
 
-        if (error) {
-          console.warn('Unable to load the signed-in student profile:', error.message)
-        }
+    initializeAuth()
 
-        if (!isMounted) {
-          return
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
 
-        if (data) {
-          applyStudentProfile(data)
+      if (!nextSession) {
+        setRequiresProfileCompletion(false)
+        setIsLoadingProfile(false)
+        setProfile(studentProfile)
+        setCurrentPage('dashboard')
+        setAuthMode('sign-in')
+      }
+    })
 
-          const { data: records, error: recordsError } = await supabase
-            .from('attendance_logs')
-            .select('date, status')
-            .eq('student_id', data.id)
-            .order('date', { ascending: true })
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
-          if (recordsError) {
-            console.warn('Unable to load the signed-in student attendance logs:', recordsError.message)
-            return
-          }
+  useEffect(() => {
+    let isMounted = true
 
-          if (isMounted) {
-            applyCalendarRecords(records ?? [])
-          }
+    async function loadStudentProfile() {
+      const user = session?.user
 
-          return
-        }
+      if (!user) {
+        return
       }
 
-      const { data, error } = await supabase.rpc('get_latest_student_profile').maybeSingle()
+      setIsLoadingProfile(true)
+      setAuthNotice('')
+
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, student_number, name, program, section, hte, phone_number, email_address, current_location')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (!isMounted) {
+        return
+      }
 
       if (error) {
-        console.warn('Unable to load the development student profile:', error.message)
+        console.warn('Unable to load the signed-in student profile:', error.message)
+        setAuthNotice('Unable to load your student profile right now.')
+        setIsLoadingProfile(false)
         return
       }
 
-      if (!isMounted || !data) {
+      if (!data) {
+        setRequiresProfileCompletion(true)
+        setIsLoadingProfile(false)
         return
       }
 
+      setRequiresProfileCompletion(false)
       applyStudentProfile(data)
 
-      const { data: records, error: recordsError } = await supabase.rpc('get_latest_student_attendance_logs')
+      const { data: records, error: recordsError } = await supabase
+        .from('attendance_logs')
+        .select('date, status')
+        .eq('student_id', data.id)
+        .order('date', { ascending: true })
 
-      if (recordsError) {
-        console.warn('Unable to load the development student attendance logs:', recordsError.message)
+      if (!isMounted) {
         return
       }
 
-      if (isMounted) {
+      if (recordsError) {
+        console.warn('Unable to load student attendance logs:', recordsError.message)
+      } else {
         applyCalendarRecords(records ?? [])
       }
+
+      setIsLoadingProfile(false)
     }
 
     loadStudentProfile()
@@ -130,40 +162,182 @@ function App() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [session])
 
-  const handleProfileSave = async ({ name, phoneNumber, emailAddress }) => {
-    if (!profile.id) {
-      throw new Error('No student profile is available to update.')
-    }
-
-    const { data, error } = await supabase
+  async function upsertStudentProfile(userId, payload) {
+    const { error } = await supabase
       .from('students')
-      .update({
-        name,
-        phone_number: phoneNumber,
-        email_address: emailAddress,
-      })
-      .eq('id', profile.id)
-      .select('id, student_number, name, program, section, phone_number, email_address, current_location')
-      .maybeSingle()
+      .upsert(
+        {
+          user_id: userId,
+          student_number: payload.studentNumber,
+          name: payload.fullName,
+          program: payload.program,
+          section: payload.section,
+          hte: payload.hte,
+          phone_number: payload.phoneNumber,
+          email_address: payload.email,
+        },
+        { onConflict: 'user_id' },
+      )
 
     if (error) {
-      throw new Error(error.message)
+      throw error
+    }
+  }
+
+  async function handleSignIn({ email, password, setFormMessage }) {
+    setIsAuthBusy(true)
+    setAuthNotice('')
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+      if (error) {
+        setFormMessage(error.message)
+      }
+    } finally {
+      setIsAuthBusy(false)
+    }
+  }
+
+  async function handleSignUp({
+    email,
+    password,
+    fullName,
+    studentNumber,
+    program,
+    section,
+    hte,
+    phoneNumber,
+    setFormMessage,
+  }) {
+    setIsAuthBusy(true)
+    setAuthNotice('')
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            student_number: studentNumber,
+            program,
+            section,
+            hte,
+            phone_number: phoneNumber,
+          },
+        },
+      })
+
+      if (error) {
+        setFormMessage(error.message)
+        return
+      }
+
+      if (!data?.user) {
+        setFormMessage('Unable to create the account right now.')
+        return
+      }
+
+      if (!data.session) {
+        setAuthNotice('Account created. Check your email for the verification link, then log in.')
+        setAuthMode('sign-in')
+        return
+      }
+
+      await upsertStudentProfile(data.user.id, {
+        email,
+        fullName,
+        studentNumber,
+        program,
+        section,
+        hte,
+        phoneNumber,
+      })
+    } catch (error) {
+      setFormMessage(error.message || 'Unable to create your student account right now.')
+    } finally {
+      setIsAuthBusy(false)
+    }
+  }
+
+  async function handleForgotPassword({ email, setFormMessage }) {
+    setIsAuthBusy(true)
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}`,
+      })
+
+      if (error) {
+        setFormMessage(error.message)
+        return
+      }
+
+      setFormMessage('Password reset link sent. Please check your email.')
+    } finally {
+      setIsAuthBusy(false)
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setIsAuthBusy(true)
+    setAuthNotice('')
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}`,
+        },
+      })
+
+      if (error) {
+        setAuthNotice(error.message)
+      }
+    } finally {
+      setIsAuthBusy(false)
+    }
+  }
+
+  async function handleCompleteProfile({
+    email,
+    fullName,
+    studentNumber,
+    program,
+    section,
+    hte,
+    phoneNumber,
+    setFormMessage,
+  }) {
+    const userId = session?.user?.id
+
+    if (!userId) {
+      setFormMessage('Your session expired. Please sign in again.')
+      return
     }
 
-    if (data) {
-      setProfile((previousProfile) => ({
-        ...previousProfile,
-        id: data.id,
-        name: data.name,
-        studentNumber: data.student_number,
-        program: data.program,
-        section: data.section,
-        phoneNumber: data.phone_number,
-        emailAddress: data.email_address,
-        location: data.current_location || previousProfile.location,
-      }))
+    setIsAuthBusy(true)
+
+    try {
+      await upsertStudentProfile(userId, {
+        email,
+        fullName,
+        studentNumber,
+        program,
+        section,
+        hte,
+        phoneNumber,
+      })
+
+      setRequiresProfileCompletion(false)
+      setAuthNotice('')
+    } catch (error) {
+      setFormMessage(error.message || 'Unable to save your profile.')
+    } finally {
+      setIsAuthBusy(false)
     }
   }
 
@@ -178,14 +352,61 @@ function App() {
     setCurrentPage('dashboard')
   }
 
+  if (isInitializingAuth) {
+    return <main style={{ padding: '2rem' }}>Loading authentication...</main>
+  }
+
+  if (!session) {
+    return (
+      <AuthPage
+        authMode={authMode}
+        authNotice={authNotice}
+        onSignIn={handleSignIn}
+        onSignUp={handleSignUp}
+        onGoogleSignIn={handleGoogleSignIn}
+        onForgotPassword={handleForgotPassword}
+        onCompleteProfile={handleCompleteProfile}
+        onSwitchToSignIn={() => {
+          setAuthMode('sign-in')
+          setAuthNotice('')
+        }}
+        onSwitchToSignUp={() => {
+          setAuthMode('sign-up')
+          setAuthNotice('')
+        }}
+        isBusy={isAuthBusy}
+      />
+    )
+  }
+
+  if (requiresProfileCompletion) {
+    return (
+      <AuthPage
+        authMode="onboarding"
+        authUser={session.user}
+        authNotice="Complete your student profile to continue to your dashboard."
+        onSignIn={handleSignIn}
+        onSignUp={handleSignUp}
+        onGoogleSignIn={handleGoogleSignIn}
+        onForgotPassword={handleForgotPassword}
+        onCompleteProfile={handleCompleteProfile}
+        onSwitchToSignIn={() => {}}
+        onSwitchToSignUp={() => {}}
+        isBusy={isAuthBusy}
+      />
+    )
+  }
+
+  if (isLoadingProfile) {
+    return <main style={{ padding: '2rem' }}>Loading dashboard...</main>
+  }
+
   if (currentPage === 'profile') {
     return (
       <ProfileSettings
-        key={`${profile.id ?? profile.studentNumber ?? profile.name}`}
         activePanel={activeProfilePanel}
         onLogout={handleLogout}
         onPanelChange={setActiveProfilePanel}
-        onSaveProfile={handleProfileSave}
         studentProfile={profile}
       />
     )

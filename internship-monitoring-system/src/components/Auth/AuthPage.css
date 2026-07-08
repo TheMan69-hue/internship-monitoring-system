@@ -1,0 +1,137 @@
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(280px, 460px) 1fr;
+  background: #bdbdbd;
+}
+
+.auth-panel {
+  background: #efefef;
+  border-radius: 0 14px 14px 0;
+  padding: 72px 42px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-panel h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 2.3vw, 2.25rem);
+  letter-spacing: 0.04em;
+  color: #121212;
+  font-weight: 650;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-form label {
+  font-size: 0.83rem;
+  color: #292929;
+}
+
+.auth-form input,
+.auth-form select {
+  width: 100%;
+  border: 1px solid #dddddd;
+  background: #e6e6e6;
+  border-radius: 6px;
+  padding: 10px 12px;
+  min-height: 42px;
+}
+
+.auth-form input:focus,
+.auth-form select:focus,
+.auth-link:focus,
+.auth-button:focus {
+  outline: 2px solid #6b6b6b;
+  outline-offset: 1px;
+}
+
+.auth-link {
+  border: 0;
+  background: transparent;
+  color: #717171;
+  font-size: 0.82rem;
+  cursor: pointer;
+  align-self: flex-end;
+  padding: 0;
+}
+
+.auth-button {
+  margin-top: 8px;
+  border: 0;
+  border-radius: 6px;
+  min-height: 42px;
+  background: #dddddd;
+  color: #111111;
+  cursor: pointer;
+}
+
+.auth-button--google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auth-google-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #c7c7c7;
+}
+
+.auth-divider {
+  text-align: center;
+  margin: 0;
+  color: #3f3f3f;
+}
+
+.auth-switch {
+  text-align: center;
+  color: #404040;
+  margin: 4px 0 0;
+}
+
+.auth-switch .auth-link {
+  display: inline;
+  align-self: initial;
+  color: #262626;
+}
+
+.auth-message {
+  margin: 4px 0 0;
+  font-size: 0.84rem;
+  color: #303030;
+}
+
+.auth-section-picker {
+  display: grid;
+  grid-template-columns: 1fr 72px auto 72px;
+  gap: 8px;
+  align-items: center;
+}
+
+.auth-section-picker span {
+  color: #1f1f1f;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 900px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+    background: #efefef;
+  }
+
+  .auth-panel {
+    border-radius: 0;
+    min-height: 100vh;
+    max-width: 560px;
+    width: 100%;
+    margin-inline: auto;
+  }
+}
