@@ -62,8 +62,8 @@ export default function Sidebar() {
                     >
                       {route.icon ? <span className='flex items-center'>{route.icon}</span> : null}
                       <span>{route.label}</span>
+                      <ChevronDown className='flex w-[15] h-[15] ml-auto'/>
                     </button>
-                    <ChevronDown/>
                   </div>
                 ) : (
                   <Link
