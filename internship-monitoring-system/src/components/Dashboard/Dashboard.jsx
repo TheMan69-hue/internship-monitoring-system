@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import './Dashboard.css'
-import { studentProfile as defaultStudentProfile } from '../../data/studentProfile'
 import { generateCalendar } from '../../utils/generateCalendar'
 import { getCurrentLocation, reverseGeocodeLocation } from '../../utils/geolocation'
 import AttendanceTracker from './AttendanceTracker'
 
-function Dashboard({ onOpenProfile, studentProfile = defaultStudentProfile }) {
+function Dashboard({ onOpenProfile, studentProfile }) {
   const [clockNow, setClockNow] = useState(new Date())
   const [liveLocation, setLiveLocation] = useState('')
   const [gpsPermissionState, setGpsPermissionState] = useState('prompt')
@@ -105,7 +104,8 @@ function Dashboard({ onOpenProfile, studentProfile = defaultStudentProfile }) {
         <div className="identity-group">
           <button type="button" className="avatar" onClick={onOpenProfile} aria-label="Open profile settings">
             <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-              <path d="M12 13.2c-3.2 0-5.8 2.6-5.8 5.8v1h11.6v-1c0-3.2-2.6-5.8-5.8-5.8Zm0-1.8a4.5 4.5 0 1 0 0-9 4.5 4.5 4.5 0 0 0 0 9Z" />
+              <circle cx="12" cy="8.2" r="4.2" />
+              <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8H4Z" />
             </svg>
           </button>
           <span className="role-label">{studentProfile.name}</span>

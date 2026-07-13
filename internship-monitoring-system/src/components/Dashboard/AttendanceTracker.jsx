@@ -138,7 +138,7 @@ if (isTimedIn && timeOutAvailableAt) {
   
         // Use local client time ONLY to anchor the visual 1-hour UI lock
         const localNow = new Date();
-        const localTimeOutAvailable = new Date(localNow.getTime() + 60 * 60 * 1000);
+        const localTimeOutAvailable = new Date(localNow.getTime() + 0.1 * 60 * 1000);
 
         setAttendanceState({
         timeInAt: serverTimeIn.toISOString(), // Kept as server time for elapsedTime counter

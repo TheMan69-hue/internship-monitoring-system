@@ -44,53 +44,95 @@ export function getCurrentLocation(options = {}) {
 }
 
 function getReadableAddress(address = {}, displayName = '') {
-  // Identify the Point of Interest (POI) or specific building/landmark
-  const poi = address.amenity || 
+  // 1. Broadened POI checklist to capture campuses, schools, and major complexes
+  const poi = address.university || 
+              address.college ||
+              address.school ||
+              address.office ||
+              address.amenity || 
               address.building || 
               address.shop || 
               address.tourism || 
               address.historic || 
               address.leisure ||
-              address.railway;
+              address.railway ||
+              address.attraction;
 
-  // Identify the closest thoroughfare (Road/Street Number)
-  const street = address.road || address.suburb;
+  // 2. Local community layer if the student is off a mapped road grid
+  const localArea = address.neighbourhood || address.hamlet || address.suburb || address.village;
 
-  // Keep your existing city/province variables as fallbacks
-  const city = address.city || address.municipality || address.town || address.village;
+  // 3. Main thoroughfare
+  const street = address.road;
+
+  // 4. City and regional descriptors
+  const city = address.city || address.municipality || address.town;
   const province = address.state || address.region || address.province;
 
-  // Build a highly descriptive address hierarchy
-  // Prioritize: POI -> Street -> City -> Province
-  if (poi) {
-    return [poi, street, city].filter(Boolean).join(', ');
+  // Construct a tight, descriptive structural hierarchy
+  const addressParts = [];
+
+  if (poi) addressParts.push(poi);
+  
+  // Include street name, or fallback to the local neighborhood identifier if street is missing
+  if (street) addressParts.push(street);
+  else if (localArea) addressParts.push(localArea);
+
+  if (city) addressParts.push(city);
+
+  // Return the compiled micro-address if valid components were collected
+  if (addressParts.length > 0) {
+    return addressParts.filter(Boolean).join(', ');
   }
 
-  // Fallback: If no distinct POI is found, try building a micro-address
-  if (street && city) {
-    return [street, city, province].filter(Boolean).join(', ');
-  }
-
-  // Ultimate fallback: Use your original layout or the full display name
-  return [city, province].filter(Boolean).join(', ') || displayName;
+  // Final fallback if the data object parsing fails entirely
+  return displayName;
 }
 
 export async function reverseGeocodeLocation({ latitude, longitude }) {
+  const radius = 5; // Distance in meters to scan around the student
+  
+  // Overpass QL query looking for any named nodes or ways near the coordinate
+  const overpassQuery = `
+    [out:json][timeout:10];
+    (
+      node(around:${radius},${latitude},${longitude})["name"];
+      way(around:${radius},${latitude},${longitude})["name"];
+    );
+    out tags;
+  `;
+
+  try {
+    const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`);
+    
+    if (!response.ok) throw new Error("Overpass API failed");
+    const data = await response.json();
+
+    if (data.elements && data.elements.length > 0) {
+      // Prioritize institutional and structural tags over generic items
+      const elements = data.elements.map(e => e.tags);
+      
+      const bestMatch = elements.find(el => el.university || el.amenity === 'university' || el.building) || 
+                        elements.find(el => el.shop || el.tourism || el.amenity) || 
+                        elements[0]; // Fallback to first found named element
+
+      if (bestMatch && bestMatch.name) {
+        return bestMatch.name;
+      }
+    }
+  } catch (error) {
+    console.warn("Overpass failed, falling back to basic geocoding...", error);
+  }
+
+  // ULTIMATE FALLBACK: Keep your original Nominatim fetch if Overpass is empty or down
   const searchParams = new URLSearchParams({
     format: 'jsonv2',
     lat: String(latitude),
     lon: String(longitude),
-    addressdetails: '1' // Ensures detailed address breakdowns are requested
-  })
+    zoom: '18',
+    addressdetails: '1'
+  });
 
-  const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${searchParams.toString()}`)
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch location name.')
-  }
-
-  const data = await response.json()
-  
-  // Pass both the address dictionary and full fallback display string
-  return getReadableAddress(data.address, data.display_name);
+  const fallbackResp = await fetch(`https://nominatim.openstreetmap.org/reverse?${searchParams.toString()}`);
+  const fallbackData = await fallbackResp.json();
+  return fallbackData.display_name || "Unknown Location";
 }

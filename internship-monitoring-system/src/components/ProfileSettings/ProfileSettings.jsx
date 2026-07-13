@@ -38,7 +38,7 @@ function EditableField({ label, name, value, onChange, type = 'text', onEdit, is
   )
 }
 
-function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, studentProfile }) {
+function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, onSaveHte, studentProfile }) {
   const isProfilePanel = activePanel === 'profile'
   const hte = studentProfile.hte ?? {}
   const [formValue, setFormValue] = useState({
@@ -46,17 +46,16 @@ function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, 
     phoneNumber: studentProfile.phoneNumber ?? '',
     emailAddress: studentProfile.emailAddress ?? '',
   })
+  const [hteFormValue, setHteFormValue] = useState({
+    name: hte.name ?? '',
+    address: hte.address ?? '',
+    timeCompletion: hte.timeCompletion ?? '',
+    workSchedule: hte.workSchedule ?? '',
+    workingTime: hte.workingTime ?? '',
+  })
   const [editingField, setEditingField] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
-
-  const hteRows = [
-    ['Name', hte.name],
-    ['Address', hte.address],
-    ['Time Completion', hte.timeCompletion],
-    ['Work Schedule', hte.workSchedule],
-    ['Working Time (Daily)', hte.workingTime],
-  ]
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target
@@ -107,6 +106,70 @@ function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, 
       type: 'email',
     },
   ]
+
+  const hteEditableRows = [
+    {
+      label: 'Name',
+      name: 'name',
+      value: hteFormValue.name,
+      type: 'text',
+    },
+    {
+      label: 'Address',
+      name: 'address',
+      value: hteFormValue.address,
+      type: 'text',
+    },
+    {
+      label: 'Time Completion',
+      name: 'timeCompletion',
+      value: hteFormValue.timeCompletion,
+      type: 'text',
+    },
+    {
+      label: 'Work Schedule',
+      name: 'workSchedule',
+      value: hteFormValue.workSchedule,
+      type: 'text',
+    },
+    {
+      label: 'Working Time (Daily)',
+      name: 'workingTime',
+      value: hteFormValue.workingTime,
+      type: 'text',
+    },
+  ]
+
+  const handleHteFieldChange = (event) => {
+    const { name, value } = event.target
+
+    setHteFormValue((previousValue) => ({
+      ...previousValue,
+      [name]: value,
+    }))
+  }
+
+  const handleHteSave = async (event) => {
+    event.preventDefault()
+    setIsSaving(true)
+    setSaveMessage('')
+
+    try {
+      await onSaveHte({
+        name: hteFormValue.name.trim(),
+        address: hteFormValue.address.trim(),
+        timeCompletion: hteFormValue.timeCompletion.trim(),
+        workSchedule: hteFormValue.workSchedule.trim(),
+        workingTime: hteFormValue.workingTime.trim(),
+      })
+
+      setSaveMessage('HTE details saved successfully.')
+    } catch (error) {
+      setSaveMessage(error?.message || 'Unable to save HTE details.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
     <main className="profile-settings-shell">
@@ -176,11 +239,29 @@ function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, 
               </div>
             </form>
           ) : (
-            <div className="profile-detail-list">
-              {hteRows.map(([label, value]) => (
-                <DetailRow key={label} label={label} value={value} />
-              ))}
-            </div>
+            <form className="profile-detail-form" onSubmit={handleHteSave}>
+              <div className="profile-detail-list profile-detail-list--profile" aria-label="HTE details">
+                {hteEditableRows.map((row) => (
+                  <EditableField
+                    key={row.name}
+                    label={row.label}
+                    name={row.name}
+                    value={row.value}
+                    type={row.type}
+                    onChange={handleHteFieldChange}
+                    onEdit={() => setEditingField(row.name)}
+                    isEditing={editingField === row.name}
+                  />
+                ))}
+              </div>
+
+              <div className="profile-actions">
+                <button type="submit" className="profile-save" disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                {saveMessage ? <p className="profile-save-status" role="status">{saveMessage}</p> : null}
+              </div>
+            </form>
           )}
         </div>
       </section>

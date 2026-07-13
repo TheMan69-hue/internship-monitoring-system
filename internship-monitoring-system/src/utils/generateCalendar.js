@@ -24,8 +24,8 @@ export function generateCalendar(studentProfile, referenceDate = new Date()) {
   const leadingDays = firstOfMonth.getDay()
   const totalCells = Math.ceil((leadingDays + daysInMonth) / 7) * 7
   const referenceIsoDate = toIsoDate(referenceDate)
-  const attendance = studentProfile.schedule?.attendance ?? {}
-  const daysOff = studentProfile.schedule?.daysOff ?? []
+  const attendance = studentProfile?.schedule?.attendance ?? {}
+  const daysOff = studentProfile?.schedule?.daysOff ?? []
   const weeks = []
 
   for (let cellIndex = 0; cellIndex < totalCells; cellIndex += 7) {

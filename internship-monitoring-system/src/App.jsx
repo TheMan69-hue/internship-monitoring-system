@@ -2,13 +2,96 @@ import { useEffect, useState } from 'react'
 import AuthPage from './components/Auth/AuthPage'
 import Dashboard from './components/Dashboard/Dashboard'
 import ProfileSettings from './components/ProfileSettings/ProfileSettings'
-import { studentProfile } from './data/studentProfile'
 import { supabase } from './supabaseClient'
+
+const emptyStudentProfile = {
+  name: '',
+  role: 'Intern',
+  studentNumber: '',
+  program: '',
+  section: '',
+  phoneNumber: '',
+  emailAddress: '',
+  location: '',
+  hte: {
+    name: '',
+    address: '',
+    timeCompletion: '',
+    workSchedule: '',
+    workingTime: '',
+  },
+  schedule: {
+    attendance: {},
+    daysOff: [],
+  },
+}
+
+const weekdayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+
+function expandWeekdayRange(startDay, endDay) {
+  const startIndex = weekdayOrder.indexOf(startDay)
+  const endIndex = weekdayOrder.indexOf(endDay)
+
+  if (startIndex === -1 || endIndex === -1) {
+    return []
+  }
+
+  if (startIndex <= endIndex) {
+    return weekdayOrder.slice(startIndex, endIndex + 1)
+  }
+
+  return [...weekdayOrder.slice(startIndex), ...weekdayOrder.slice(0, endIndex + 1)]
+}
+
+function parseWorkScheduleToDaysOff(workSchedule) {
+  const normalizedSchedule = workSchedule?.trim().toLowerCase()
+
+  if (!normalizedSchedule) {
+    return []
+  }
+
+  const workDays = new Set()
+  const rangeMatches = normalizedSchedule.matchAll(
+    /\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b\s*(?:-|to|through)\s*\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/g,
+  )
+
+  for (const match of rangeMatches) {
+    expandWeekdayRange(match[1], match[2]).forEach((day) => workDays.add(day))
+  }
+
+  normalizedSchedule
+    .split(/[^a-z]+/)
+    .filter(Boolean)
+    .forEach((token) => {
+      if (weekdayOrder.includes(token)) {
+        workDays.add(token)
+      }
+    })
+
+  if (workDays.size === 0) {
+    return []
+  }
+
+  return weekdayOrder
+    .map((day, dayIndex) => ({ day, dayIndex }))
+    .filter(({ day }) => !workDays.has(day))
+    .map(({ dayIndex }) => dayIndex)
+}
+
+function getDaysOffFromProfile(profile) {
+  const daysOff = parseWorkScheduleToDaysOff(profile?.hte?.workSchedule)
+
+  if (daysOff.length > 0) {
+    return daysOff
+  }
+
+  return profile?.schedule?.daysOff ?? []
+}
 
 function App() {
   const [currentPage, setCurrentPage] = useState(() => (window.location.hash === '#profile' ? 'profile' : 'dashboard'))
   const [activeProfilePanel, setActiveProfilePanel] = useState('profile')
-  const [profile, setProfile] = useState(studentProfile)
+  const [profile, setProfile] = useState(emptyStudentProfile)
   const [session, setSession] = useState(null)
   const [isInitializingAuth, setIsInitializingAuth] = useState(true)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
@@ -29,8 +112,15 @@ function App() {
       emailAddress: data.email_address,
       location: data.current_location || previousProfile.location,
       hte: {
-        ...previousProfile.hte,
-        name: data.hte || previousProfile.hte?.name,
+        name: data.hte_name || data.hte || previousProfile.hte?.name || '',
+        address: data.hte_address || previousProfile.hte?.address || '',
+        timeCompletion: data.hte_time_completion || previousProfile.hte?.timeCompletion || '',
+        workSchedule: data.hte_work_schedule || previousProfile.hte?.workSchedule || '',
+        workingTime: data.hte_working_time || previousProfile.hte?.workingTime || '',
+      },
+      schedule: {
+        ...previousProfile.schedule,
+        daysOff: parseWorkScheduleToDaysOff(data.hte_work_schedule || data.hte || previousProfile.hte?.workSchedule || ''),
       },
     }))
   }
@@ -43,6 +133,7 @@ function App() {
       schedule: {
         ...previousProfile.schedule,
         attendance,
+        daysOff: getDaysOffFromProfile(previousProfile),
       },
     }))
   }
@@ -87,7 +178,7 @@ function App() {
       if (!nextSession) {
         setRequiresProfileCompletion(false)
         setIsLoadingProfile(false)
-        setProfile(studentProfile)
+        setProfile(emptyStudentProfile)
         setCurrentPage('dashboard')
         setAuthMode('sign-in')
       }
@@ -114,7 +205,9 @@ function App() {
 
       const { data, error } = await supabase
         .from('students')
-        .select('id, student_number, name, program, section, hte, phone_number, email_address, current_location')
+        .select(
+          'id, student_number, name, program, section, hte, hte_name, hte_address, hte_time_completion, hte_work_schedule, hte_working_time, phone_number, email_address, current_location',
+        )
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -165,25 +258,96 @@ function App() {
   }, [session])
 
   async function upsertStudentProfile(userId, payload) {
-    const { error } = await supabase
-      .from('students')
-      .upsert(
-        {
-          user_id: userId,
-          student_number: payload.studentNumber,
-          name: payload.fullName,
-          program: payload.program,
-          section: payload.section,
-          hte: payload.hte,
-          phone_number: payload.phoneNumber,
-          email_address: payload.email,
-        },
-        { onConflict: 'user_id' },
-      )
+    const studentRecord = {
+      user_id: userId,
+      student_number: payload.studentNumber,
+      name: payload.fullName,
+      program: payload.program,
+      section: payload.section,
+      phone_number: payload.phoneNumber,
+      email_address: payload.email,
+    }
+
+    const hteName = payload.hteName ?? (typeof payload.hte === 'string' ? payload.hte : payload.hte?.name)
+
+    if (hteName !== undefined) {
+      studentRecord.hte = hteName
+      studentRecord.hte_name = hteName
+    }
+
+    if (payload.hteDetails) {
+      if (payload.hteDetails.address !== undefined) {
+        studentRecord.hte_address = payload.hteDetails.address
+      }
+
+      if (payload.hteDetails.timeCompletion !== undefined) {
+        studentRecord.hte_time_completion = payload.hteDetails.timeCompletion
+      }
+
+      if (payload.hteDetails.workSchedule !== undefined) {
+        studentRecord.hte_work_schedule = payload.hteDetails.workSchedule
+      }
+
+      if (payload.hteDetails.workingTime !== undefined) {
+        studentRecord.hte_working_time = payload.hteDetails.workingTime
+      }
+    }
+
+    const { error } = await supabase.from('students').upsert(studentRecord, { onConflict: 'user_id' })
 
     if (error) {
       throw error
     }
+  }
+
+  function handleProfileSave(updates) {
+    const nextProfile = {
+      ...profile,
+      name: updates.name,
+      phoneNumber: updates.phoneNumber,
+      emailAddress: updates.emailAddress,
+    }
+
+    setProfile(nextProfile)
+
+    return upsertStudentProfile(session?.user?.id, {
+      email: updates.emailAddress,
+      fullName: updates.name,
+      studentNumber: nextProfile.studentNumber,
+      program: nextProfile.program,
+      section: nextProfile.section,
+      phoneNumber: updates.phoneNumber,
+    })
+  }
+
+  function handleHteSave(updates) {
+    const nextHte = {
+      name: updates.name,
+      address: updates.address,
+      timeCompletion: updates.timeCompletion,
+      workSchedule: updates.workSchedule,
+      workingTime: updates.workingTime,
+    }
+
+    setProfile((previousProfile) => ({
+      ...previousProfile,
+      hte: nextHte,
+      schedule: {
+        ...previousProfile.schedule,
+        daysOff: parseWorkScheduleToDaysOff(nextHte.workSchedule),
+      },
+    }))
+
+    return upsertStudentProfile(session?.user?.id, {
+      email: profile.emailAddress,
+      fullName: profile.name,
+      studentNumber: profile.studentNumber,
+      program: profile.program,
+      section: profile.section,
+      phoneNumber: profile.phoneNumber,
+      hteName: nextHte.name,
+      hteDetails: nextHte,
+    })
   }
 
   async function handleSignIn({ email, password, setFormMessage }) {
@@ -253,7 +417,7 @@ function App() {
         studentNumber,
         program,
         section,
-        hte,
+        hteName: hte,
         phoneNumber,
       })
     } catch (error) {
@@ -328,7 +492,7 @@ function App() {
         studentNumber,
         program,
         section,
-        hte,
+        hteName: hte,
         phoneNumber,
       })
 
@@ -407,6 +571,8 @@ function App() {
         activePanel={activeProfilePanel}
         onLogout={handleLogout}
         onPanelChange={setActiveProfilePanel}
+        onSaveProfile={handleProfileSave}
+        onSaveHte={handleHteSave}
         studentProfile={profile}
       />
     )
