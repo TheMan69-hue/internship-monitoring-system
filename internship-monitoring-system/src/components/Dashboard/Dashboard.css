@@ -23,8 +23,9 @@
 }
 
 .top-bar {
-  height: 54px;
-  padding: 0 12px 0 8px;
+min-height: 54px; 
+  height: auto;
+  padding: 8px 12px;
   background: #117030;
   display: flex;
   align-items: center;
@@ -34,6 +35,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  box-sizing: border-box;
 }
 
 .identity-group,
@@ -91,7 +93,20 @@
   color: #ffffff;
   font-size: 1.05rem;
   font-weight: 700;
-  white-space: nowrap;
+  /* CHANGE: Allow wrapping and stop endless horizontal stretching */
+  white-space: normal; 
+  display: flex;
+  align-items: flex-start; /* Keeps pin icon aligned with the first line of text */
+  max-width: 420px; /* Limits width on laptop screens to force the text downwards */
+}
+
+.location-pill span {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.15; /* Ensures compact spacing on laptop view as well */
 }
 
 .location-pill svg {
@@ -383,36 +398,91 @@
 }
 
 @media (max-width: 700px) {
-  .dashboard-shell {
+.dashboard-shell {
     padding-inline: 10px;
     gap: 12px;
   }
 
   .top-bar {
     height: auto;
-    min-height: 54px;
-    padding: 8px 10px;
-    align-items: flex-start;
-    gap: 10px;
+    min-height: 60px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-sizing: border-box;
+  }
+
+  .identity-group {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .role-label {
+    font-size: 1.1rem;
+    line-height: 1.2;
+    white-space: normal;
   }
 
   .status-group {
-    gap: 8px;
-    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Keeps the entire right stack aligned flush-right */
+    justify-content: center;
+    gap: 2px; /* Tightens space between Address and Time */
+    flex: 1;
+    min-width: 0; 
+    max-width: 60%; 
   }
 
   .location-pill {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
+    max-width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    /* FIX: Prevents the container from ballooning out, pulling the red pin snug against the text */
+    align-self: flex-end; 
+  }
+
+  .location-pill span {
+    /* FIX: Changed back to standard -webkit-box so the browser can natively draw the '...' */
+    display: -webkit-box; 
+    -webkit-line-clamp: 3; 
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Forces '...' to appear when text cuts off */
+    text-align: right;
+    word-break: break-word;
+    /* FIX: Drastically tightens the vertical text spacing */
+    line-height: 1.15; 
+  }
+
+  .location-pill svg {
+    width: 13px;
+    height: 13px;
+    margin-top: 1px; /* Micro-alignment to keep the pin level with the top text line */
+    flex-shrink: 0;
+  }
+
+  .timestamp {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0px; 
+    line-height: 1.1; /* Tightens time-to-date spacing */
   }
 
   .timestamp strong {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
 
   .timestamp span {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
   }
 
+  /* --- Keep your existing calendar card & button styles underneath --- */
   .tracker-card {
     padding: 10px 10px 16px;
   }

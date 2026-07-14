@@ -4,6 +4,58 @@ import { generateCalendar } from '../../utils/generateCalendar'
 import { getCurrentLocation, reverseGeocodeLocation } from '../../utils/geolocation'
 import AttendanceTracker from './AttendanceTracker'
 
+const getReadableAddress = (locationData) => {
+  if (!locationData) return '';
+
+  // Case A: If it's a raw full-address text string
+  if (typeof locationData === 'string') {
+    const parts = locationData.split(',').map(p => p.trim());
+    const uniqueParts = [];
+    
+    parts.forEach(part => {
+      // Aggressively checks for overlaps (like catching "San Agustin 1" vs "San Agustin")
+      const isRedundant = uniqueParts.some(existing => {
+        const normalExisting = existing.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normalPart = part.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return normalExisting.includes(normalPart) || normalPart.includes(normalExisting);
+      });
+      
+      if (!isRedundant) uniqueParts.push(part);
+    });
+    
+    // Grab the first 3 uniquely identified pieces
+    return uniqueParts.slice(0, 3).join(', ');
+  }
+
+  // Case B: If it's a raw object fetched from OpenStreetMap / Nominatim API
+  if (typeof locationData === 'object') {
+    const addr = locationData.address || locationData;
+    const components = [
+      addr.university || addr.college || addr.school || addr.building || addr.amenity,
+      addr.road || addr.street,
+      addr.residential || addr.subdivision,
+      addr.neighbourhood || addr.suburb || addr.village || addr.barrio || addr.barangay,
+      addr.city || addr.town || addr.municipality
+    ].filter(Boolean);
+
+    const uniqueParts = [];
+    components.forEach(item => {
+      const cleanItem = item.trim();
+      const isRedundant = uniqueParts.some(existing => {
+        const normalExisting = existing.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normalClean = cleanItem.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return normalExisting.includes(normalClean) || normalClean.includes(normalExisting);
+      });
+      
+      if (!isRedundant) uniqueParts.push(cleanItem);
+    });
+
+    return uniqueParts.slice(0, 3).join(', ');
+  }
+
+  return String(locationData);
+};
+
 function Dashboard({ onOpenProfile, studentProfile }) {
   const [clockNow, setClockNow] = useState(new Date())
   const [liveLocation, setLiveLocation] = useState('')
@@ -116,7 +168,15 @@ function Dashboard({ onOpenProfile, studentProfile }) {
             <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
               <path d="M12 2.5a8.5 8.5 0 0 0-8.5 8.5c0 6.3 8.5 10.5 8.5 10.5S20.5 17.3 20.5 11A8.5 8.5 0 0 0 12 2.5Zm0 11.2a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4Z" />
             </svg>
-            <span>{liveLocation || (gpsPermissionState === 'denied' ? 'GPS access blocked' : studentProfile.location)}</span>
+            <span>
+              {liveLocation 
+                ? getReadableAddress(liveLocation) 
+                : (gpsPermissionState === 'denied' 
+                    ? 'GPS access blocked' 
+                    : getReadableAddress(studentProfile?.location)
+                  )
+              }
+            </span>
           </div>
 
           <div className="timestamp" aria-label={`Server synchronized time ${displayTime}, ${displayDate}`}>

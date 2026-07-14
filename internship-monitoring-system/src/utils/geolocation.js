@@ -44,48 +44,40 @@ export function getCurrentLocation(options = {}) {
 }
 
 function getReadableAddress(address = {}, displayName = '') {
-  // 1. Broadened POI checklist to capture campuses, schools, and major complexes
-  const poi = address.university || 
-              address.college ||
-              address.school ||
-              address.office ||
-              address.amenity || 
-              address.building || 
-              address.shop || 
-              address.tourism || 
-              address.historic || 
-              address.leisure ||
-              address.railway ||
-              address.attraction;
-
-  // 2. Local community layer if the student is off a mapped road grid
-  const localArea = address.neighbourhood || address.hamlet || address.suburb || address.village;
-
-  // 3. Main thoroughfare
-  const street = address.road;
-
-  // 4. City and regional descriptors
-  const city = address.city || address.municipality || address.town;
-  const province = address.state || address.region || address.province;
-
-  // Construct a tight, descriptive structural hierarchy
-  const addressParts = [];
-
-  if (poi) addressParts.push(poi);
-  
-  // Include street name, or fallback to the local neighborhood identifier if street is missing
-  if (street) addressParts.push(street);
-  else if (localArea) addressParts.push(localArea);
-
-  if (city) addressParts.push(city);
-
-  // Return the compiled micro-address if valid components were collected
-  if (addressParts.length > 0) {
-    return addressParts.filter(Boolean).join(', ');
+  if (!address || Object.keys(address).length === 0) {
+    if (displayName) return displayName.split(',').slice(0, 3).join(', ').trim();
+    return 'Unknown Location';
   }
 
-  // Final fallback if the data object parsing fails entirely
-  return displayName;
+  // 1. Gather geographic pieces from most specific to least specific
+  const components = [
+    address.university || address.college || address.school || address.building || address.amenity,
+    address.road || address.street,
+    address.residential || address.subdivision,
+    address.neighbourhood || address.suburb || address.village || address.barrio || address.barangay,
+    address.city || address.town || address.municipality
+  ].filter(Boolean);
+
+  const uniqueComponents = [];
+
+  // 2. Aggressive Deduplication: strips spaces/numbers to catch "San Agustin 1" vs "San Agustin"
+  components.forEach((item) => {
+    const cleanItem = item.trim();
+    
+    const isRedundant = uniqueComponents.some((existing) => {
+      const normalExisting = existing.toLowerCase().replace(/[^a-z]/g, '');
+      const normalClean = cleanItem.toLowerCase().replace(/[^a-z]/g, '');
+      return normalExisting.includes(normalClean) || normalClean.includes(normalExisting);
+    });
+
+    if (!isRedundant) {
+      uniqueComponents.push(cleanItem);
+    }
+  });
+
+  // 3. Keep ONLY the top 3 most descriptive local elements
+  // Example result: "Neptune Street, Solar Homes, San Agustin 1"
+  return uniqueComponents.slice(0, 3).join(', ');
 }
 
 export async function reverseGeocodeLocation({ latitude, longitude }) {
@@ -123,7 +115,6 @@ export async function reverseGeocodeLocation({ latitude, longitude }) {
     console.warn("Overpass failed, falling back to basic geocoding...", error);
   }
 
-  // ULTIMATE FALLBACK: Keep your original Nominatim fetch if Overpass is empty or down
   const searchParams = new URLSearchParams({
     format: 'jsonv2',
     lat: String(latitude),
