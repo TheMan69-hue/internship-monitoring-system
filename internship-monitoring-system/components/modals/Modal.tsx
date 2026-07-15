@@ -35,13 +35,11 @@ export default function Modal({
               className="text-[#374151]"
             />
           </button>
-
         </div>
-
+        <div className="px-10 py-6">
         {children}
-
+        </div>
       </div>
-
     </div>
   );
 }
