@@ -17,7 +17,6 @@ export default function StudentDetailsModal({
       title="Student Details"
       onClose={onClose}
     >
-      {/* Content */}
       <div className="grid grid-cols-2 gap-x-8 gap-y-6 p-6">
 
         <div>
@@ -79,75 +78,65 @@ export default function StudentDetailsModal({
             Assigned HTE
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {student.hte}
+            {student.hte?.companyName ?? "No HTE"}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Internship Status
+            HTE Status
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {student.status}
+            {student.hte?.status ?? "No HTE"}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Work Schedule
+            HTE Address
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {student.workSchedule}
+            {student.hte?.address ?? "No Address"}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Working Hours
+            HTE Contact Person
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {student.workingHours}
+            {student.hte?.contactPerson ?? "N/A"}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            OJT Start Date
+            HTE Contact Number
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {student.startDate}
+            {student.hte?.contactNumber ?? "N/A"}
           </p>
         </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            OJT End Date
+            HTE Email
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {student.endDate}
-          </p>
-        </div>
-
-        <div className="col-span-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Assigned Coordinator
-          </p>
-          <p className="mt-1 text-base font-medium text-[#111827]">
-            {student.coordinator}
+            {student.hte?.email ?? "N/A"}
           </p>
         </div>
 
       </div>
 
-      {/* Footer */}
-    <div className="flex justify-end border-t bg-[#F9FAFB] px-6 py-4">
+      <div className="flex justify-end border-t bg-[#F9FAFB] px-6 py-4">
         <button
-            className="rounded-[10px] bg-[#2563EB] px-5 py-2 text-white transition hover:bg-[#1D4ED8]"
+          onClick={onClose}
+          className="rounded-[10px] bg-[#2563EB] px-5 py-2 text-white transition hover:bg-[#1D4ED8]"
         >
-            Edit
+          Close
         </button>
-    </div>
-
+      </div>
     </Modal>
   );
 }
