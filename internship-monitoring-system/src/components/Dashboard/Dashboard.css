@@ -284,18 +284,19 @@ min-height: 54px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 3px;
+  gap: 1px;
   color: #12371d;
-  font-size: clamp(0.46rem, 1.25vw, 0.76rem);
+  /* The tile itself scales on hover, so keep this base size compact. */
+  font-size: clamp(0.3rem, 0.5vw, 0.42rem);
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 1;
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 180ms ease 80ms, transform 180ms ease 80ms;
   pointer-events: none;
 }
 
-.calendar-record span { display: flex; flex-direction: column; gap: 1px; }
+.calendar-record span { display: flex; flex-direction: column; gap: 0; }
 .calendar-record b { color: #0a6c2b; font-size: 0.88em; text-transform: uppercase; letter-spacing: 0.02em; }
 
 .calendar-tile--has-record:hover .calendar-record,
