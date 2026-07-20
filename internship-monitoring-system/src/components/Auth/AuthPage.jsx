@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import { supabase } from '../../supabaseClient'
 import './AuthPage.css'
 
 const PROGRAM_OPTIONS = ['BSCS', 'BSIT', 'BSCpE', 'BSARCH', 'BSCE', 'BSEE', 'BSIE']
@@ -27,6 +28,35 @@ function AuthPage({
   const [hte, setHte] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [formMessage, setFormMessage] = useState('')
+
+  const [hteCompaniesList, setHteCompaniesList] = useState([])
+
+  useEffect(() => {
+    const fetchHteCompanies = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('hte_companies')
+          .select('company_name')
+          .order('company_name', { ascending: true })
+
+        if (error) throw error
+
+        if (data) {
+          const names = data.map(item => item.company_name)
+          setHteCompaniesList(names)
+          
+          // Pre-select the first HTE in the list if empty
+          if (names.length > 0 && !hte) {
+            setHte(names[0])
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch HTE companies:', err)
+      }
+    }
+
+    fetchHteCompanies()
+  }, [])
 
   const section = `${program} ${sectionYear} - ${sectionGroup}`
 
@@ -207,7 +237,18 @@ function AuthPage({
             </div>
 
             <label htmlFor="sign-up-hte">HTE</label>
-            <input id="sign-up-hte" type="text" value={hte} onChange={(event) => setHte(event.target.value)} />
+            <select 
+              id="sign-up-hte" 
+              value={hte} 
+              onChange={(event) => setHte(event.target.value)}
+            >
+              <option value="">-- Select HTE Company --</option>
+              {hteCompaniesList.map((company) => (
+                <option key={company} value={company}>
+                  {company}
+                </option>
+              ))}
+            </select>
 
             <label htmlFor="sign-up-email">Email Address</label>
             <input
@@ -295,8 +336,18 @@ function AuthPage({
             </div>
 
             <label htmlFor="onboarding-hte">HTE</label>
-            <input id="onboarding-hte" type="text" value={hte} onChange={(event) => setHte(event.target.value)} />
-
+            <select 
+              id="onboarding-hte" 
+              value={hte} 
+              onChange={(event) => setHte(event.target.value)}
+            >
+              <option value="">-- Select HTE Company --</option>
+              {hteCompaniesList.map((company) => (
+                <option key={`onboard-hte-${company}`} value={company}>
+                  {company}
+                </option>
+              ))}
+            </select>
             <label htmlFor="onboarding-email">Email Address</label>
             <input
               id="onboarding-email"

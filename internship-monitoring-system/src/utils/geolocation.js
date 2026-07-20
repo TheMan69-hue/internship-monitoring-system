@@ -81,49 +81,97 @@ function getReadableAddress(address = {}, displayName = '') {
 }
 
 export async function reverseGeocodeLocation({ latitude, longitude }) {
-  const radius = 5; // Distance in meters to scan around the student
-  
-  // Overpass QL query looking for any named nodes or ways near the coordinate
-  const overpassQuery = `
-    [out:json][timeout:10];
-    (
-      node(around:${radius},${latitude},${longitude})["name"];
-      way(around:${radius},${latitude},${longitude})["name"];
-    );
-    out tags;
-  `;
+  let landmarkName = "";
+  let addressObj = {};
 
+  // 1. Fetch the granular address object from Nominatim
   try {
-    const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`);
+    const searchParams = new URLSearchParams({
+      format: 'jsonv2',
+      lat: String(latitude),
+      lon: String(longitude),
+      zoom: '18',
+      addressdetails: '1'
+    });
     
-    if (!response.ok) throw new Error("Overpass API failed");
-    const data = await response.json();
-
-    if (data.elements && data.elements.length > 0) {
-      // Prioritize institutional and structural tags over generic items
-      const elements = data.elements.map(e => e.tags);
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${searchParams.toString()}`);
+    if (response.ok) {
+      const data = await response.json();
+      addressObj = data.address || {};
       
-      const bestMatch = elements.find(el => el.university || el.amenity === 'university' || el.building) || 
-                        elements.find(el => el.shop || el.tourism || el.amenity) || 
-                        elements[0]; // Fallback to first found named element
+      // Look if Nominatim natively caught an institutional landmark
+      landmarkName = addressObj.university || addressObj.college || addressObj.school || addressObj.building || "";
+    }
+  } catch (e) {
+    console.warn("Nominatim fetch failed:", e);
+  }
 
-      if (bestMatch && bestMatch.name) {
-        return bestMatch.name;
+  // 2. Scan Overpass to target structural building landmarks (e.g., "College of Engineering...")
+  try {
+    const radius = 100; 
+    const overpassQuery = `
+      [out:json][timeout:10];
+      (
+        node(around:${radius},${latitude},${longitude})["name"];
+        way(around:${radius},${latitude},${longitude})["name"];
+      );
+      out tags;
+    `;
+
+    const overpassResp = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`);
+    
+    if (overpassResp.ok) {
+      const data = await overpassResp.json();
+      if (data.elements && data.elements.length > 0) {
+        const elements = data.elements.map(e => e.tags);
+        
+        // Target structural nodes explicitly containing educational or large building tags
+        const highPriorityLandmark = elements.find(el => 
+          el.building || 
+          el.university || 
+          (el.name && el.name.toLowerCase().includes('college')) ||
+          (el.name && el.name.toLowerCase().includes('technology'))
+        );
+
+        if (highPriorityLandmark && highPriorityLandmark.name) {
+          landmarkName = highPriorityLandmark.name.trim();
+        }
       }
     }
   } catch (error) {
-    console.warn("Overpass failed, falling back to basic geocoding...", error);
+    console.warn("Overpass validation bypassed, falling back to base metrics...", error);
   }
 
-  const searchParams = new URLSearchParams({
-    format: 'jsonv2',
-    lat: String(latitude),
-    lon: String(longitude),
-    zoom: '18',
-    addressdetails: '1'
+  // Fallback if no specific campus building node was captured
+  if (!landmarkName) {
+    landmarkName = "Cavite State University Main Campus";
+  }
+
+  // 3. Reconstruct the macro address framework completely clean
+  // We DELIBERATELY skip minor noise keys like: address.amenity, address.bank, address.atm, address.courtyard
+  const macroFramework = [
+    addressObj.road || addressObj.street,
+    addressObj.suburb || addressObj.neighbourhood,
+    addressObj.village || addressObj.barrio || addressObj.barangay,
+    addressObj.town || addressObj.city || addressObj.municipality,
+    addressObj.county,
+    addressObj.state,
+    addressObj.postcode,
+    addressObj.country
+  ]
+  .map(item => item?.trim())
+  .filter(Boolean);
+
+  // Deduplicate overlapping structural strings (e.g. handling matching suburb/village tags)
+  const uniqueFramework = [];
+  macroFramework.forEach(part => {
+    const isDuplicate = uniqueFramework.some(existing => 
+      existing.toLowerCase().includes(part.toLowerCase()) || 
+      part.toLowerCase().includes(existing.toLowerCase())
+    );
+    if (!isDuplicate) uniqueFramework.push(part);
   });
 
-  const fallbackResp = await fetch(`https://nominatim.openstreetmap.org/reverse?${searchParams.toString()}`);
-  const fallbackData = await fallbackResp.json();
-  return fallbackData.display_name || "Unknown Location";
+  // Combine our targeted building landmark with the clean macro layout array
+  return [landmarkName, ...uniqueFramework].join(', ');
 }

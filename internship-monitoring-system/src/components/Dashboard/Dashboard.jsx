@@ -56,10 +56,51 @@ const getReadableAddress = (locationData) => {
   return String(locationData);
 };
 
+function formatDuration(durationMs) {
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  return `${hours}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`
+}
+
+function formatTime(value) {
+  if (!value) return '—'
+
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date(value))
+}
+
+function parseRequiredHours(value) {
+  if (typeof value === 'number') return Math.max(0, value)
+  if (!value) return 0
+
+  const normalizedValue = String(value).trim().toLowerCase()
+  const hoursAndMinutes = normalizedValue.match(/(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)?\s*(?::|hours?\s*)\s*(\d+)\s*(?:m|min|mins|minute|minutes)?/)
+
+  if (hoursAndMinutes) {
+    return Number(hoursAndMinutes[1]) + Number(hoursAndMinutes[2]) / 60
+  }
+
+  const firstNumber = normalizedValue.match(/\d+(?:\.\d+)?/)
+  return firstNumber ? Number(firstNumber[0]) : 0
+}
+
+function getRenderedDuration(record) {
+  if (!record?.time_in || !record?.time_out) return 0
+
+  return Math.max(0, new Date(record.time_out).getTime() - new Date(record.time_in).getTime())
+}
+
 function Dashboard({ onOpenProfile, studentProfile }) {
   const [clockNow, setClockNow] = useState(new Date())
   const [liveLocation, setLiveLocation] = useState('')
   const [gpsPermissionState, setGpsPermissionState] = useState('prompt')
+  const [selectedDate, setSelectedDate] = useState(null)
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -149,6 +190,16 @@ function Dashboard({ onOpenProfile, studentProfile }) {
   )
 
   const calendar = useMemo(() => generateCalendar(studentProfile, clockNow), [studentProfile, clockNow])
+  const progress = useMemo(() => {
+    const records = Object.values(studentProfile?.schedule?.records ?? {})
+    const renderedMs = records.reduce((total, record) => total + getRenderedDuration(record), 0)
+    const requiredHours = parseRequiredHours(studentProfile?.hte?.timeCompletion)
+    const requiredMs = requiredHours * 60 * 60 * 1000
+    const remainingMs = Math.max(0, requiredMs - renderedMs)
+    const percent = requiredMs ? Math.min(100, (renderedMs / requiredMs) * 100) : 0
+
+    return { renderedMs, requiredMs, remainingMs, percent }
+  }, [studentProfile])
 
   return (
     <main className="dashboard-shell">
@@ -197,18 +248,51 @@ function Dashboard({ onOpenProfile, studentProfile }) {
           ))}
         </div>
 
-        <div className="calendar-grid" role="presentation" aria-hidden="true">
+        <div className="calendar-grid">
           {calendar.weeks.flatMap((week, weekIndex) =>
-            week.map((tile) => (
-              <span
+            week.map((tile) => {
+              const record = studentProfile?.schedule?.records?.[tile.isoDate]
+              const hasRecord = Boolean(record)
+              const isSelected = selectedDate === tile.isoDate
+              const renderedDuration = getRenderedDuration(record)
+
+              return (
+              <button
+                type="button"
                 key={`${weekIndex}-${tile.isoDate}`}
-                className={`calendar-tile calendar-tile--${tile.status}${tile.isCurrentDay ? ' calendar-tile--current' : ''}`}
+                className={`calendar-tile calendar-tile--${tile.status}${tile.isCurrentDay ? ' calendar-tile--current' : ''}${hasRecord ? ' calendar-tile--has-record' : ''}${isSelected ? ' calendar-tile--selected' : ''}`}
+                onClick={() => setSelectedDate(isSelected ? null : tile.isoDate)}
+                aria-expanded={hasRecord ? isSelected : undefined}
+                aria-label={hasRecord ? `Show attendance record for ${tile.isoDate}` : `${tile.isoDate}: ${tile.status}`}
               >
                 <span className="calendar-number">{tile.dayNumber}</span>
-              </span>
-            )),
+                {hasRecord ? (
+                  <span className="calendar-record" aria-hidden={!isSelected}>
+                    <span><b>Time in</b>{formatTime(record.time_in)}</span>
+                    <span><b>Time out</b>{formatTime(record.time_out)}</span>
+                    <span><b>Status</b>{record.status}</span>
+                    <span><b>Rendered</b>{record.time_out ? formatDuration(renderedDuration) : 'In progress'}</span>
+                  </span>
+                ) : null}
+              </button>
+              )
+            }),
           )}
         </div>
+
+        <section className="hours-progress" aria-label="Internship hours progress">
+          <div className="hours-progress__heading">
+            <div>
+              <h2>Internship hours</h2>
+              <p>{progress.requiredMs ? `${formatDuration(progress.renderedMs)} rendered of ${formatDuration(progress.requiredMs)}` : 'Set your Time Completion in HTE Details to track your progress.'}</p>
+            </div>
+            {progress.requiredMs ? <strong>{Math.round(progress.percent)}%</strong> : null}
+          </div>
+          <div className="hours-progress__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress.percent)}>
+            <span style={{ width: `${progress.percent}%` }} />
+          </div>
+          {progress.requiredMs ? <p className="hours-progress__remaining">{progress.remainingMs ? `${formatDuration(progress.remainingMs)} remaining` : 'Required hours completed'}</p> : null}
+        </section>
       </section>
 
       <AttendanceTracker clockNow={clockNow} gpsPermissionState={gpsPermissionState} />

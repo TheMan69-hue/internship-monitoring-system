@@ -22,6 +22,7 @@ const emptyStudentProfile = {
   },
   schedule: {
     attendance: {},
+    records: {},
     daysOff: [],
   },
 }
@@ -127,12 +128,14 @@ function App() {
 
   function applyCalendarRecords(records) {
     const attendance = Object.fromEntries(records.map((record) => [record.date, record.status]))
+    const attendanceRecords = Object.fromEntries(records.map((record) => [record.date, record]))
 
     setProfile((previousProfile) => ({
       ...previousProfile,
       schedule: {
         ...previousProfile.schedule,
         attendance,
+        records: attendanceRecords,
         daysOff: getDaysOffFromProfile(previousProfile),
       },
     }))
@@ -233,7 +236,7 @@ function App() {
 
       const { data: records, error: recordsError } = await supabase
         .from('attendance_logs')
-        .select('date, status')
+        .select('date, status, time_in, time_out')
         .eq('student_id', data.id)
         .order('date', { ascending: true })
 

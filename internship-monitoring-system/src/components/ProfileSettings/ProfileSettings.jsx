@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react' 
+import { supabase } from '../../supabaseClient' 
 import './ProfileSettings.css'
 
 const avatarPath =
@@ -56,6 +57,39 @@ function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, 
   const [editingField, setEditingField] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+
+  
+  useEffect(() => {
+    const fetchHteDetails = async () => {
+      const studentHteName = typeof studentProfile.hte === 'object' 
+        ? studentProfile.hte?.name 
+        : studentProfile.hte
+
+      if (!studentHteName) return
+
+      try {
+        const { data, error } = await supabase
+          .from('hte_companies')
+          .select('company_name, address')
+          .eq('company_name', studentHteName)
+          .single()
+
+        if (error) throw error
+
+        if (data) {
+          setHteFormValue((prev) => ({
+            ...prev,
+            name: data.company_name,
+            address: data.address || '',
+          }))
+        }
+      } catch (err) {
+        console.warn('Failed to fetch matched company details:', err)
+      }
+    }
+
+    fetchHteDetails()
+  }, [studentProfile.hte])
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target
