@@ -66,7 +66,7 @@ export default function Dashboard() {
   // }; 
 
   return (
-    //TODO: change route page
+    
     <div>
         <main className=" flex flex-col flex-1 h-full p-5">
             <div className='flex flex-row justify-between items-center text-black'>
@@ -83,7 +83,8 @@ export default function Dashboard() {
               semesterValue={selectedSemester}
               onSemesterChange={setSelectedSemester}
             />
-            <SchoolYearLists data={SchoolYears} isLoading={isLoading} onRowClick={(SchoolYear) => router.push(`/SchoolYears/${SchoolYear.id}`)}/>
+            {/*TODO: change route page */}
+            <SchoolYearLists data={SchoolYears} isLoading={isLoading} onRowClick={(SchoolYear) => router.push(`/admin/registration/archive-list/program-list`)}/> {/*${SchoolYear.id}*/}
             <div>
               <Button 
               onClick={() => setShowModal(true)}

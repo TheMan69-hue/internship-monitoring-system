@@ -25,7 +25,7 @@ export default function YearFilter({
   placeholder = 'Select an option'
 }: YearFilterProps) {
   return (
-    <div className="flex overflow-none flex-auto w-full h-full shrink-0 py-5">
+    <div className="flex overflow-none flex-auto w-full shrink-0 py-5">
         <div className="flex flex-row gap-5 items-center">
             <div className="flex flex-row shrink-0 gap-3 items-center">
                 <label htmlFor="year-filter-select" className="text-sm font-sm flex shrink-0 text-black">{yearLabel}</label>

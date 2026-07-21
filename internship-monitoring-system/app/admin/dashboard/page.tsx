@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import YearFilter from '@/components/table/YearFilter';
+import Card from '@/components/cards/DashboardCard';
+import Summary from '@/components/cards/DashboardSummaryCard';
+import AuditLog, { AuditLogs } from '@/components/cards/AuditLogCard'
+import { auditLogs as mockAuditLogs } from '@/lib/auditlogs';
+import { User } from "lucide-react";
 
 
 export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState<string>('');
   const [currentActiveYear, setCurrentActiveYear] = useState<string>('');
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [Auditlog, setAuditlog] = useState<AuditLogs[]>([]);
 
   const yearOptions = [
     { value: '2024', label: '2024-2025' },
@@ -22,8 +28,26 @@ export default function Dashboard() {
     { value: 'summer', label: 'Summer' },
   ];
 
+  useEffect(() => {
+      const fetchData = async () => {
+        setIsLoading(true);
+        try {
+          // TODO: Replace with actual API calls to database
+          setCurrentActiveYear('2024');
+          setAuditlog(mockAuditLogs);
+          // setSchoolYears(await fetchSchoolYearsFromDB());
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+  
+      fetchData();
+    }, []);
+
   return (
-      <main className=" flex flex-col flex-1 h-full p-5">
+      <main className=" flex flex-col flex-1 h-full p-5 overflow-auto">
           <div className='flex flex-row justify-between items-center text-black'>
             <h1>Dashboard</h1>
             <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
@@ -40,8 +64,50 @@ export default function Dashboard() {
               onSemesterChange={setSelectedSemester}
             />
           </div>
-          <div className='bg-blue-500 rounded-lg w-full h-full'>
-            <p className='text-black'>hello world</p>
+          <div className=' rounded-lg w-full h-full'>
+            <div className='grid grid-flow-row-dense grid-cols-4 auto-rows-auto gap-5'>
+              <div >
+                <Card 
+                title='Total Registered Students'
+                value={67}
+                icon={User}/>
+              </div>
+              <div>
+                <Card 
+                title='Pending Approvals'
+                value={67}
+                icon={User}/>
+              </div>
+              <div>
+                <Card 
+                title='Approved Interns'
+                value={67}
+                icon={User}/>
+              </div>
+              <div>
+                <Card 
+                title='Total OJT COordinators'
+                value={67}
+                icon={User}/>
+              </div>
+              <div className='col-span-3 row-span-2 grid-rows-subgrid'>
+                <AuditLog
+                  title='Audit Logs'
+                  data={mockAuditLogs}
+                  isLoading={isLoading}
+                />
+              </div>
+              <div>
+                <Card 
+                title='Registered HTE'
+                value={67}
+                icon={User}/>
+              </div>
+              <div>
+                <Summary title='Student Summary'/>
+              </div>
+            </div>
+            
           </div>
       </main>
   );
