@@ -43,8 +43,27 @@
   min-height: 42px;
 }
 
+.auth-password-field {
+  display: flex;
+  gap: 8px;
+}
+
+.auth-password-field input {
+  min-width: 0;
+}
+
+.auth-password-toggle {
+  border: 1px solid #dddddd;
+  border-radius: 6px;
+  background: #e6e6e6;
+  color: #292929;
+  cursor: pointer;
+  padding: 0 12px;
+}
+
 .auth-form input:focus,
 .auth-form select:focus,
+.auth-password-toggle:focus,
 .auth-link:focus,
 .auth-button:focus {
   outline: 2px solid #6b6b6b;

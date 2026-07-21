@@ -96,7 +96,7 @@ function getRenderedDuration(record) {
   return Math.max(0, new Date(record.time_out).getTime() - new Date(record.time_in).getTime())
 }
 
-function Dashboard({ onOpenProfile, studentProfile }) {
+function Dashboard({ onOpenProfile, studentProfile, userId }) {
   const [clockNow, setClockNow] = useState(new Date())
   const [liveLocation, setLiveLocation] = useState('')
   const [gpsPermissionState, setGpsPermissionState] = useState('prompt')
@@ -295,7 +295,7 @@ function Dashboard({ onOpenProfile, studentProfile }) {
         </section>
       </section>
 
-      <AttendanceTracker clockNow={clockNow} gpsPermissionState={gpsPermissionState} />
+      <AttendanceTracker clockNow={clockNow} gpsPermissionState={gpsPermissionState} userId={userId} />
     </main>
   )
 }

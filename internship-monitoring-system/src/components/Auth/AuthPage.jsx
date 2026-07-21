@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import './AuthPage.css'
 
-const PROGRAM_OPTIONS = ['BSCS', 'BSIT', 'BSCpE', 'BSARCH', 'BSCE', 'BSEE', 'BSIE']
 const DIGIT_OPTIONS = ['1', '2', '3', '4', '5']
 
 function AuthPage({
@@ -20,9 +19,12 @@ function AuthPage({
 }) {
   const [email, setEmail] = useState(authUser?.email ?? '')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [fullName, setFullName] = useState(authUser?.user_metadata?.full_name ?? '')
   const [studentNumber, setStudentNumber] = useState('')
-  const [program, setProgram] = useState(PROGRAM_OPTIONS[0])
+  const [program, setProgram] = useState('')
+  const [programOptions, setProgramOptions] = useState([])
   const [sectionYear, setSectionYear] = useState('1')
   const [sectionGroup, setSectionGroup] = useState('1')
   const [hte, setHte] = useState('')
@@ -32,6 +34,21 @@ function AuthPage({
   const [hteCompaniesList, setHteCompaniesList] = useState([])
 
   useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        const { data, error } = await supabase.from('programs').select('program_name').order('program_name')
+        if (error) throw error
+
+        const names = (data ?? []).map((item) => item.program_name).filter(Boolean)
+        setProgramOptions(names)
+        if (names.length > 0) setProgram((current) => current || names[0])
+      } catch (err) {
+        console.warn('Failed to fetch programs:', err)
+      }
+    }
+
+    fetchPrograms()
+
     const fetchHteCompanies = async () => {
       try {
         const { data, error } = await supabase
@@ -88,8 +105,13 @@ function AuthPage({
     event.preventDefault()
     setFormMessage('')
 
-    if (!fullName || !studentNumber || !program || !hte || !email || !phoneNumber || !password) {
+    if (!fullName || !studentNumber || !program || !hte || !email || !phoneNumber || !password || !confirmPassword) {
       setFormMessage('Please complete all required fields.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setFormMessage('Passwords do not match.')
       return
     }
 
@@ -209,7 +231,8 @@ function AuthPage({
 
             <label htmlFor="sign-up-program">Program</label>
             <select id="sign-up-program" value={program} onChange={(event) => setProgram(event.target.value)}>
-              {PROGRAM_OPTIONS.map((option) => (
+              <option value="">-- Select program --</option>
+              {programOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -268,13 +291,16 @@ function AuthPage({
             />
 
             <label htmlFor="sign-up-password">Password</label>
-            <input
-              id="sign-up-password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="new-password"
-            />
+            <div className="auth-password-field">
+              <input id="sign-up-password" type={isPasswordVisible ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" />
+              <button type="button" className="auth-password-toggle" onClick={() => setIsPasswordVisible((visible) => !visible)}>{isPasswordVisible ? 'Hide' : 'Show'}</button>
+            </div>
+
+            <label htmlFor="sign-up-confirm-password">Confirm Password</label>
+            <div className="auth-password-field">
+              <input id="sign-up-confirm-password" type={isPasswordVisible ? 'text' : 'password'} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" />
+              <button type="button" className="auth-password-toggle" onClick={() => setIsPasswordVisible((visible) => !visible)}>{isPasswordVisible ? 'Hide' : 'Show'}</button>
+            </div>
 
             <button type="submit" className="auth-button" disabled={isBusy}>
               {isBusy ? 'PROCESSING...' : 'CREATE ACCOUNT'}
@@ -308,7 +334,8 @@ function AuthPage({
 
             <label htmlFor="onboarding-program">Program</label>
             <select id="onboarding-program" value={program} onChange={(event) => setProgram(event.target.value)}>
-              {PROGRAM_OPTIONS.map((option) => (
+              <option value="">-- Select program --</option>
+              {programOptions.map((option) => (
                 <option key={`onboarding-${option}`} value={option}>
                   {option}
                 </option>

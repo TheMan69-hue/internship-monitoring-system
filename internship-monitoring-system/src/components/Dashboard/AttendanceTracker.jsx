@@ -38,8 +38,8 @@ function readStoredAttendance(storageKey) {
   }
 }
 
-function AttendanceTracker({ clockNow, gpsPermissionState }) {
-  const [storageKey] = useState(() => `attendance-state-${new Date().toISOString().slice(0, 10)}`)
+function AttendanceTracker({ clockNow, gpsPermissionState, userId }) {
+  const [storageKey] = useState(() => `attendance-state-${userId}-${new Date().toISOString().slice(0, 10)}`)
   const [attendanceState, setAttendanceState] = useState(() => readStoredAttendance(storageKey))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [attendanceMessage, setAttendanceMessage] = useState('')

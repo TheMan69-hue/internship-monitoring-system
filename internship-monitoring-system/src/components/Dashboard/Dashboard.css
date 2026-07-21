@@ -93,11 +93,10 @@ min-height: 54px;
   color: #ffffff;
   font-size: 1.05rem;
   font-weight: 700;
-  /* CHANGE: Allow wrapping and stop endless horizontal stretching */
   white-space: normal; 
   display: flex;
-  align-items: flex-start; /* Keeps pin icon aligned with the first line of text */
-  max-width: 420px; /* Limits width on laptop screens to force the text downwards */
+  align-items: flex-start; 
+  max-width: 420px; 
 }
 
 .location-pill span {
@@ -106,7 +105,7 @@ min-height: 54px;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.15; /* Ensures compact spacing on laptop view as well */
+  line-height: 1.15; 
 }
 
 .location-pill svg {
@@ -255,7 +254,7 @@ min-height: 54px;
 
 .calendar-tile--recorded-outside {
   background: #8dc07a;
-  opacity: 0.45; /* Makes it look faint/greyed out while preserving the green hue */
+  opacity: 0.45; 
 }
 
 
@@ -286,7 +285,6 @@ min-height: 54px;
   justify-content: flex-start;
   gap: 1px;
   color: #12371d;
-  /* The tile itself scales on hover, so keep this base size compact. */
   font-size: clamp(0.3rem, 0.5vw, 0.42rem);
   font-weight: 700;
   line-height: 1;
@@ -490,9 +488,9 @@ min-height: 54px;
   .status-group {
     display: flex;
     flex-direction: column;
-    align-items: flex-end; /* Keeps the entire right stack aligned flush-right */
+    align-items: flex-end; 
     justify-content: center;
-    gap: 2px; /* Tightens space between Address and Time */
+    gap: 2px; 
     flex: 1;
     min-width: 0; 
     max-width: 60%; 
@@ -504,27 +502,25 @@ min-height: 54px;
     display: flex;
     align-items: flex-start;
     gap: 4px;
-    /* FIX: Prevents the container from ballooning out, pulling the red pin snug against the text */
     align-self: flex-end; 
   }
 
   .location-pill span {
-    /* FIX: Changed back to standard -webkit-box so the browser can natively draw the '...' */
     display: -webkit-box; 
     -webkit-line-clamp: 3; 
     -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis; /* Forces '...' to appear when text cuts off */
+    text-overflow: ellipsis; 
     text-align: right;
     word-break: break-word;
-    /* FIX: Drastically tightens the vertical text spacing */
+    
     line-height: 1.15; 
   }
 
   .location-pill svg {
     width: 13px;
     height: 13px;
-    margin-top: 1px; /* Micro-alignment to keep the pin level with the top text line */
+    margin-top: 1px; 
     flex-shrink: 0;
   }
 
@@ -533,7 +529,7 @@ min-height: 54px;
     flex-direction: column;
     align-items: flex-end;
     gap: 0px; 
-    line-height: 1.1; /* Tightens time-to-date spacing */
+    line-height: 1.1; 
   }
 
   .timestamp strong {
@@ -544,7 +540,6 @@ min-height: 54px;
     font-size: 0.75rem;
   }
 
-  /* --- Keep your existing calendar card & button styles underneath --- */
   .tracker-card {
     padding: 10px 10px 16px;
   }

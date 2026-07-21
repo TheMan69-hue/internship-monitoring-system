@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AuthPage from './components/Auth/AuthPage'
 import Dashboard from './components/Dashboard/Dashboard'
 import ProfileSettings from './components/ProfileSettings/ProfileSettings'
@@ -100,6 +100,7 @@ function App() {
   const [authMode, setAuthMode] = useState('sign-in')
   const [authNotice, setAuthNotice] = useState('')
   const [requiresProfileCompletion, setRequiresProfileCompletion] = useState(false)
+  const isProvisioningProfileRef = useRef(false)
 
   function applyStudentProfile(data) {
     setProfile((previousProfile) => ({
@@ -226,6 +227,10 @@ function App() {
       }
 
       if (!data) {
+        if (isProvisioningProfileRef.current) {
+          return
+        }
+
         setRequiresProfileCompletion(true)
         setIsLoadingProfile(false)
         return
@@ -381,6 +386,7 @@ function App() {
   }) {
     setIsAuthBusy(true)
     setAuthNotice('')
+    isProvisioningProfileRef.current = true
 
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -400,17 +406,20 @@ function App() {
 
       if (error) {
         setFormMessage(error.message)
+        isProvisioningProfileRef.current = false
         return
       }
 
       if (!data?.user) {
         setFormMessage('Unable to create the account right now.')
+        isProvisioningProfileRef.current = false
         return
       }
 
       if (!data.session) {
         setAuthNotice('Account created. Check your email for the verification link, then log in.')
         setAuthMode('sign-in')
+        isProvisioningProfileRef.current = false
         return
       }
 
@@ -423,9 +432,13 @@ function App() {
         hteName: hte,
         phoneNumber,
       })
+      setRequiresProfileCompletion(false)
+      setCurrentPage('dashboard')
+      setSession({ ...data.session })
     } catch (error) {
       setFormMessage(error.message || 'Unable to create your student account right now.')
     } finally {
+      isProvisioningProfileRef.current = false
       setIsAuthBusy(false)
     }
   }
@@ -581,7 +594,7 @@ function App() {
     )
   }
 
-  return <Dashboard onOpenProfile={openProfile} studentProfile={profile} />
+  return <Dashboard onOpenProfile={openProfile} studentProfile={profile} userId={session.user.id} />
 }
 
 export default App
