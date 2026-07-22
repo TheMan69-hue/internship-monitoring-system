@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import SearchBar from "@/components/search/SearchBar";
+import SearchInput from "@/components/search/SearchInput";
 import DataTable from "@/components/table/DataTable";
 import AttendanceDetailsModal from "@/components/modals/AttendanceDetailsModal";
 
@@ -19,6 +19,45 @@ export default function AttendanceLogsClient({
   const [selectedAttendance, setSelectedAttendance] =
     useState<AttendanceGroup | null>(null);
 
+  const [selectedProgram, setSelectedProgram] = useState("All");
+  const [selectedSection, setSelectedSection] = useState("All");
+  const [search, setSearch] = useState("");
+
+  const programs = [
+    "All",
+    ...new Set(attendanceLogs.map((student) => student.program)),
+  ];
+
+  const sections = [
+    "All",
+    ...new Set(attendanceLogs.map((student) => student.section)),
+  ];
+
+  const filteredAttendance = attendanceLogs.filter((student) => {
+    const matchesProgram =
+      selectedProgram === "All" ||
+      student.program === selectedProgram;
+
+    const matchesSection =
+      selectedSection === "All" ||
+      student.section === selectedSection;
+
+    const matchesSearch =
+      search === "" ||
+      student.studentName
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
+      student.studentNumber
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+    return (
+      matchesProgram &&
+      matchesSection &&
+      matchesSearch
+    );
+  });
+
   return (
     <div className="rounded-[20px] bg-white p-6 shadow-sm">
       <h2 className="mb-6 text-3xl font-semibold text-[#111827]">
@@ -33,8 +72,19 @@ export default function AttendanceLogsClient({
               Program
             </label>
 
-            <select className="w-40 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]">
-              <option>All</option>
+            <select
+              value={selectedProgram}
+              onChange={(e) => setSelectedProgram(e.target.value)}
+              className="w-40 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]"
+            >
+              {programs.map((program) => (
+                <option
+                  key={program}
+                  value={program}
+                >
+                  {program}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -43,17 +93,32 @@ export default function AttendanceLogsClient({
               Section
             </label>
 
-            <select className="w-40 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]">
-              <option>All</option>
+            <select
+              value={selectedSection}
+              onChange={(e) => setSelectedSection(e.target.value)}
+              className="w-40 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]"
+            >
+              {sections.map((section) => (
+                <option
+                  key={section}
+                  value={section}
+                >
+                  {section}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
-        <SearchBar />
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search student number or name..."
+        />
       </div>
 
       <DataTable columns={attendanceColumns}>
-        {attendanceLogs.map((student) => {
+        {filteredAttendance.map((student) => {
           const latestAttendance = student.attendanceHistory[0];
 
           return (
@@ -92,7 +157,7 @@ export default function AttendanceLogsClient({
 
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm text-[#374151]">
-          Showing {attendanceLogs.length} of {attendanceLogs.length} students
+          Showing {filteredAttendance.length} of {attendanceLogs.length} students
         </p>
 
         <div className="flex items-center gap-2">

@@ -37,6 +37,13 @@ export interface Student {
     email: string | null;
     status: string;
   } | null;
+
+  schedule: {
+    expectedTimeIn: string;
+    expectedTimeOut: string;
+    requiredHours: number;
+    graceMinutes: number;
+  } | null;
 }
 
 export interface HTE {

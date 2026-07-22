@@ -25,6 +25,13 @@ type StudentWithHTE = {
     email: string | null;
     status: string;
   } | null;
+
+  student_work_schedules: {
+    expected_time_in: string;
+    expected_time_out: string;
+    required_hours: number;
+    grace_minutes: number;
+  } | null;
 };
 
 export async function getAssignedStudents() {
@@ -144,6 +151,13 @@ export async function getAssignedStudents() {
         contact_number,
         email,
         status
+      ),
+
+      student_work_schedules!student_work_schedules_student_id_fkey(
+        expected_time_in,
+        expected_time_out,
+        required_hours,
+        grace_minutes
       )
     `)
     .in(
@@ -163,9 +177,72 @@ export async function getAssignedStudents() {
 
     throw studentError;
   }
-  console.log("Students from Supabase:", students);
+  console.log(
+    JSON.stringify(students, null, 2)
+  );
   console.log("Student count:", students?.length);
+  
+  const mappedStudents = ((students ?? []) as unknown as StudentWithHTE[])
+  .map((student) => ({
 
+    id: student.id,
+
+    studentNumber: student.student_number,
+
+    name: student.name,
+
+    program:
+      student.program?.program_name ??
+      "Unknown",
+
+    section:
+      student.section?.section_name ??
+      "Unknown",
+
+    email:
+      student.email_address,
+
+    contactNumber:
+      student.phone_number,
+
+    hte:
+      student.hte_companies
+        ? {
+            id: student.hte_companies.id,
+            companyName: student.hte_companies.company_name,
+            address: student.hte_companies.address,
+            contactPerson: student.hte_companies.contact_person,
+            contactNumber: student.hte_companies.contact_number,
+            email: student.hte_companies.email,
+            status: student.hte_companies.status,
+          }
+        : null,
+
+    schedule:
+      student.student_work_schedules
+        ? {
+            expectedTimeIn:
+              student.student_work_schedules.expected_time_in,
+
+            expectedTimeOut:
+              student.student_work_schedules.expected_time_out,
+
+            requiredHours:
+              student.student_work_schedules.required_hours,
+
+            graceMinutes:
+              student.student_work_schedules.grace_minutes,
+          }
+        : null,
+
+  }));
+
+console.log(
+  "MAPPED STUDENTS:",
+  JSON.stringify(mappedStudents, null, 2)
+);
+
+return mappedStudents;
   return ((students ?? []) as unknown as StudentWithHTE[])
     .map(
       (student)=>({
@@ -219,6 +296,23 @@ export async function getAssignedStudents() {
           :
 
           null,
+
+        schedule:
+          student.student_work_schedules
+            ? {
+                expectedTimeIn:
+                  student.student_work_schedules.expected_time_in,
+
+                expectedTimeOut:
+                  student.student_work_schedules.expected_time_out,
+
+                requiredHours:
+                  student.student_work_schedules.required_hours,
+
+                graceMinutes:
+                  student.student_work_schedules.grace_minutes,
+              }
+            : null,
 
       })
     );

@@ -73,7 +73,10 @@ export default function StudentListClient({
                 <tr
                 key={student.id}
                 className="cursor-pointer border-t transition-colors hover:bg-[#F3F4F6]"
-                onClick={() => setSelectedStudent(student)}
+                onClick={() => {
+                    console.log("CLICKED STUDENT:", student);
+                    setSelectedStudent(student);
+                    }}
                 >
                 <td className="px-6 py-4 text-[#374151]">
                     {student.studentNumber}
