@@ -163,6 +163,8 @@ export async function getAssignedStudents() {
 
     throw studentError;
   }
+  console.log("Students from Supabase:", students);
+  console.log("Student count:", students?.length);
 
   return ((students ?? []) as unknown as StudentWithHTE[])
     .map(

@@ -52,8 +52,8 @@ export async function getDashboardStats() {
   } = await supabase
     .from("coordinator_assignments")
     .select(`
-      program,
-      section
+      program_id,
+      section_id
     `)
     .eq(
       "coordinator_id",
@@ -79,6 +79,14 @@ export async function getDashboardStats() {
 
   // Get assigned students
 
+  const programIds = assignments.map(
+    item => item.program_id
+  );
+
+  const sectionIds = assignments.map(
+    item => item.section_id
+  );
+
   const {
     data: students,
     error: studentError
@@ -88,14 +96,8 @@ export async function getDashboardStats() {
       id,
       hte_id
     `)
-    .or(
-      assignments
-      .map(
-        item =>
-          `and(program.eq.${item.program},section.eq.${item.section})`
-      )
-      .join(",")
-    );
+    .in("program_id", programIds)
+    .in("section_id", sectionIds);
 
 
 

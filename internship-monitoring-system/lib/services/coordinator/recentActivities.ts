@@ -72,6 +72,7 @@ export async function getRecentActivities() {
   }
 
   const activities = (data ?? []) as AttendanceResponse[];
+  console.log("Recent Activities:", activities);
 
   const latestActivities = new Map<string, RecentActivity>();
 

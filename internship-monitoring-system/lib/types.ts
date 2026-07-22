@@ -53,17 +53,33 @@ export interface HTE {
 
 export interface AttendanceLog {
   id: string;
+  studentId: string;
   studentNumber: string;
   studentName: string;
   program: string;
   section: string;
   hte: string;
+  rawDate: string;
   date: string;
   timeIn: string | null;
   timeOut: string | null;
   location: string | null;
-  remarks: string | null;
+  status: string;
+  gpsCoordinates: string | null;
 }
+
+export interface AttendanceGroup {
+  studentId: string;
+  studentNumber: string;
+  studentName: string;
+  program: string;
+  section: string;
+  hte: string;
+
+  latestAttendance: AttendanceLog;
+  attendanceHistory: AttendanceLog[];
+}
+
 export interface Program {
   id: string;
   programName: string;
