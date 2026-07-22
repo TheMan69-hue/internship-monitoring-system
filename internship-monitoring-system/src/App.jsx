@@ -585,6 +585,10 @@ function App() {
     return (
       <ProfileSettings
         activePanel={activeProfilePanel}
+        onOpenDashboard={() => {
+          window.location.hash = ''
+          setCurrentPage('dashboard')
+        }}
         onLogout={handleLogout}
         onPanelChange={setActiveProfilePanel}
         onSaveProfile={handleProfileSave}

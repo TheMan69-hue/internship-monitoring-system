@@ -39,7 +39,7 @@ function EditableField({ label, name, value, onChange, type = 'text', onEdit, is
   )
 }
 
-function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, onSaveHte, studentProfile }) {
+function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout, onSaveProfile, onSaveHte, studentProfile }) {
   const isProfilePanel = activePanel === 'profile'
   const hte = studentProfile.hte ?? {}
   const [formValue, setFormValue] = useState({
@@ -209,32 +209,41 @@ function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, 
     <main className="profile-settings-shell">
       <aside className="profile-sidebar" aria-label="Profile settings navigation">
         <div className="profile-sidebar__identity">
-          <div className="profile-sidebar__avatar" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="presentation">
-              <path d={avatarPath} />
-            </svg>
-          </div>
-          <strong>{studentProfile.name}</strong>
+          <strong>{studentProfile.name || 'Student'}</strong>
+          <span>Student</span>
         </div>
 
         <nav className="profile-tabs" aria-label="Profile sections">
+          <button type="button" className="profile-tabs__button" onClick={onOpenDashboard}>
+            <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+              <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z" />
+            </svg>
+            <span>Dashboard</span>
+          </button>
           <button
             type="button"
             className={isProfilePanel ? 'profile-tabs__button profile-tabs__button--active' : 'profile-tabs__button'}
             onClick={() => onPanelChange('profile')}
           >
-            Profile
+            <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+              <path d={avatarPath} />
+            </svg>
+            <span>Profile</span>
           </button>
           <button
             type="button"
             className={!isProfilePanel ? 'profile-tabs__button profile-tabs__button--active' : 'profile-tabs__button'}
             onClick={() => onPanelChange('hte')}
           >
-            HTE
+            <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+              <path d="M5 20V7l7-4 7 4v13h-5v-5H10v5H5Zm3-9h2V9H8v2Zm0 3h2v-2H8v2Zm6-3h2V9h-2v2Zm0 3h2v-2h-2v2Z" />
+            </svg>
+            <span>HTE Details</span>
           </button>
         </nav>
 
         <button type="button" className="profile-logout" onClick={onLogout}>
+          <span className="profile-logout__avatar" aria-hidden="true">{studentProfile.name?.trim()?.charAt(0)?.toUpperCase() || 'S'}</span>
           <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
             <path d="M4 3.5h8v2H6v13h6v2H4v-17Zm12.3 4.2 5.1 5.1-5.1 5.1-1.4-1.4 2.7-2.7H10v-2h7.6l-2.7-2.7 1.4-1.4Z" />
           </svg>
@@ -242,9 +251,21 @@ function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, 
         </button>
       </aside>
 
-      <section className="profile-settings-content" aria-label={isProfilePanel ? 'Profile details' : 'HTE details'}>
+      <section className="profile-main-area" aria-label={isProfilePanel ? 'Profile details' : 'HTE details'}>
+        <header className="profile-page-header">
+          <div>
+            <h1>{isProfilePanel ? 'Profile Settings' : 'HTE Details'}</h1>
+            <p>{isProfilePanel ? 'View and manage your account details' : 'View and manage your host training establishment details'}</p>
+          </div>
+          <div className="profile-header-meta">
+            <span>Academic Year</span>
+            <strong>Midyear 2026</strong>
+          </div>
+        </header>
+
+        <div className="profile-settings-content">
         <div className="profile-detail-card">
-          <h1>{isProfilePanel ? 'Profile Details' : 'HTE Details'}</h1>
+          <h2>{isProfilePanel ? 'Profile Details' : 'HTE Details'}</h2>
           {isProfilePanel ? (
             <form className="profile-detail-form" onSubmit={handleSave}>
               <div className="profile-detail-list profile-detail-list--profile" aria-label="Profile details">
@@ -297,6 +318,7 @@ function ProfileSettings({ activePanel, onPanelChange, onLogout, onSaveProfile, 
               </div>
             </form>
           )}
+        </div>
         </div>
       </section>
     </main>
