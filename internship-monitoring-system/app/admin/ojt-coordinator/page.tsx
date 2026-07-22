@@ -32,7 +32,7 @@ export default function Dashboard() {
   }, []);
 
   // Create new entry or update existing
-  const handleAdd = (newData: Omit<Coordinator, 'id'> & { id?: number; sections?: number[] }) => {
+  const handleAdd = (newData: Omit<Coordinator, 'id' | 'password'> & { id?: number; sections?: number[]; password?: string }) => {
     setData((prev) => {
       if (newData.id !== undefined) {
         return prev.map((item) => (item.id === newData.id ? newData as Coordinator : item));

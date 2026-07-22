@@ -21,6 +21,13 @@ interface ReusableTableProps<T> {
   onSelectionChange?: (ids: (string | number)[]) => void;
 }
 
+const statusStyles = {
+  active: 'bg-green-100 text-green-800',
+  inactive: 'bg-gray-100 text-gray-500',
+  completed: 'bg-blue-100 text-blue-800',
+  pending: 'bg-amber-100 text-amber-800',
+};
+
 export default function ReusableTable<T extends { id?: string | number }>({
   data,
   columns,
@@ -80,7 +87,7 @@ export default function ReusableTable<T extends { id?: string | number }>({
   }
 
   return (
-    <div className="border border-slate-200 rounded-md max-h-96 overflow-auto">
+    <div className="border border-slate-200 rounded-md max-h-[288px] overflow-auto">
         <table className="w-full">
           <thead className="bg-slate-100 sticky top-0 z-10">
             <tr>
@@ -127,18 +134,53 @@ export default function ReusableTable<T extends { id?: string | number }>({
                     />
                   </td>
                 )}
-                {columns.map((col) => (
-                  <td key={`${row.id}-${String(col)}`} className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                    {String(row[col] ?? '-')}
-                  </td>
-                ))}
+                {columns.map((col) => {
+                  const cellValue = String(row[col] ?? '-');
+                  const lowerVal = cellValue.toLowerCase();
+                  const isStatus = lowerVal in statusStyles;
+                  return (
+                    <td key={`${row.id}-${String(col)}`} className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                      {isStatus ? (
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${statusStyles[lowerVal as keyof typeof statusStyles]}`}>
+                          {cellValue}
+                        </span>
+                      ) : (
+                        cellValue
+                      )}
+                    </td>
+                  );
+                })}
                 {actions && actions.length > 0 && showActions && (
                   <td className="px-4 py-3 text-sm text-gray-700" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        setMenuPos({ top: rect.bottom + 4, left: rect.right - 176 });
+                        const dropdownWidth = 176; // w-44 = 176px
+                        const dropdownHeight = actions.length * 40 + 8; // approximate height
+                        
+                        // Calculate position with viewport bounds checking
+                        let left = rect.right - dropdownWidth;
+                        let top = rect.bottom + 4;
+                        
+                        // Check right edge
+                        if (left < 0) {
+                          left = rect.left;
+                        }
+                        // Check left edge (if still negative after above)
+                        if (left + dropdownWidth > window.innerWidth) {
+                          left = window.innerWidth - dropdownWidth - 8;
+                        }
+                        // Check bottom edge
+                        if (top + dropdownHeight > window.innerHeight) {
+                          top = rect.top - dropdownHeight - 4;
+                        }
+                        // Check top edge
+                        if (top < 0) {
+                          top = rect.bottom + 4;
+                        }
+                        
+                        setMenuPos({ top, left });
                         setMenuOpen(menuOpen === row.id ? null : (row.id ?? null));
                       }}
                       className="p-1 hover:bg-gray-100 rounded"

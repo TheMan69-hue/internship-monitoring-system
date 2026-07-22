@@ -73,7 +73,7 @@ export default function Dashboard() {
             <ReusableTable
               data={pagedData} 
               isLoading={isLoading}
-              columns={['name', 'required_hours']}
+              columns={['name', 'required_hours', 'Total_Interns', 'Total_Coordinator']}
               showActions
               actions={[
                 { label: 'Edit', onClick: (row) => handleEdit(row) },

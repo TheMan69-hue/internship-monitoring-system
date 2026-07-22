@@ -5,7 +5,7 @@ import Button from '@/components/buttons/buttons';
 import SearchBar from "@/components/search/SearchBar";
 
 type TablelayoutProps<T> = {
-  title: string;
+  title?: string;
   buttonTitle?: string;
   ButtonIcon?: ReactNode;
   data: T[];
@@ -31,9 +31,9 @@ export default function TableLayout<T>({
   const currentData = data.slice(startIndex, startIndex + entriesPerPage);
 
   return(
-    <div className="flex rounded-lg w-full bg-white border border-slate-200 p-5">
-      <div className="w-full">
-        <div className="flex w-full gap-5 items-center justify-between mb-5">
+    <div className="flex flex-col rounded-lg w-full bg-white border border-slate-200 p-5">
+      <div className="flex flex-col flex-1 min-h-0">
+        <div className="flex w-full gap-5 items-center justify-between mb-5 flex-shrink-0">
           <div className="flex gap-5 items-center">
             <h1 className="text-black">{title}</h1>
             <div>
@@ -50,11 +50,11 @@ export default function TableLayout<T>({
             <SearchBar/> 
           </div>
         </div>
-        <div className="w-full mb-5 overflow-auto">
+        <div className="w-full flex-1 min-h-0">
           {children(currentData)}
         </div>
         {/* Pagination controls */}
-        <div className="flex items-center mt-3 px-2 text=black gap-5 mb-5">
+        <div className="flex items-center mt-3 px-2 text-black gap-5 mb-5 flex-shrink-0">
 
           <span className="text-sm text-slate-500">
             Page {currentPage} of {totalPages}

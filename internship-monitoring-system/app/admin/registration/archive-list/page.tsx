@@ -130,7 +130,7 @@ export default function Dashboard() {
     //TODO: change route page
     <main className=" flex flex-col flex-1 h-full p-5">
         <div className='flex flex-row justify-between items-center text-black'>
-          <h1>Archive List</h1>
+          <h1>Academic Year List</h1>
           <h1>{ activeSchoolYear?.academicYear || 'No Active Academic Year'}</h1>
         </div>
         <div>
@@ -145,12 +145,12 @@ export default function Dashboard() {
             onSemesterChange={setSelectedSemester}
           />
         </div>
-        <TableLayout<SchoolYear> title='Section List' buttonTitle='+'  data={Data} onClick={() => { setEditData(null); setShowModal(true); }}>
+        <TableLayout<SchoolYear> title='Academic Year' buttonTitle='+'  data={Data} onClick={() => { setEditData(null); setShowModal(true); }}>
           {(pagedData) => (
             <ReusableTable
               data={pagedData} 
               isLoading={isLoading}
-              columns={['academicYear', 'semester', 'status']}
+              columns={['academicYear', 'semester', 'status',]}
               onRowClick={() => router.push(`/admin/registration/archive-list/program-list`)}
               showActions
               actions={[

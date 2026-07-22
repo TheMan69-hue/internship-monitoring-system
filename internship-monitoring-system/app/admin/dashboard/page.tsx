@@ -68,7 +68,7 @@ export default function Dashboard() {
             <div className='grid grid-flow-row-dense grid-cols-4 auto-rows-auto gap-5'>
               <div >
                 <Card 
-                title='Total Registered Students'
+                title='Registered Students'
                 value={67}
                 icon={User}/>
               </div>
@@ -86,7 +86,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <Card 
-                title='Total OJT COordinators'
+                title='OJT Coordinators'
                 value={67}
                 icon={User}/>
               </div>

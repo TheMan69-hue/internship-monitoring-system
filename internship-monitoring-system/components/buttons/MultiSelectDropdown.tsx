@@ -24,7 +24,9 @@ export default function MultiSelectDropdown({
 }: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [dropdownUp, setDropdownUp] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Close on outside click
@@ -59,7 +61,17 @@ export default function MultiSelectDropdown({
 
   const handleToggleOpen = () => {
     setOpen((prev) => {
-      if (!prev) setSearch('');
+      if (!prev) {
+        setSearch('');
+        // Check if there's enough space below for the dropdown
+        if (triggerRef.current) {
+          const rect = triggerRef.current.getBoundingClientRect();
+          const dropdownHeight = 200; // approximate max height
+          const spaceBelow = window.innerHeight - rect.bottom;
+          const spaceAbove = rect.top;
+          setDropdownUp(spaceBelow < dropdownHeight && spaceAbove > spaceBelow);
+        }
+      }
       return !prev;
     });
   };
@@ -75,7 +87,7 @@ export default function MultiSelectDropdown({
       )}
 
       {/* Input field with chips inside + dropdown button on right */}
-      <div className="relative">
+      <div className="relative" ref={triggerRef}>
         <div className="flex justify-between items-center gap-1 rounded-[10px] border border-[#D1D5DB] bg-white transition focus-within:border-[#2563EB]">
           {/* Chips + search input area (80%) */}
           <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0 px-3 py-2">
@@ -143,12 +155,16 @@ export default function MultiSelectDropdown({
 
         {/* Dropdown */}
         {open && (
-          <div className="absolute z-50 mt-1 w-full bg-white border border-[#D1D5DB] rounded-[10px] shadow-lg">
+          <div
+            className={`absolute z-50 w-full bg-white border border-[#D1D5DB] rounded-[10px] shadow-lg ${
+              dropdownUp ? 'bottom-full mb-1' : 'mt-1'
+            }`}
+          >
             {/* Search input in dropdown */}
             
 
             {/* Options list */}
-            <div className="max-h-20 overflow-y-auto">
+            <div className="max-h-50 overflow-y-auto">
               {filtered.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-gray-400">No options found</p>
               ) : (

@@ -29,6 +29,7 @@ export type Coordinator = {
   email: string;
   contact_num: string;
   role: 'admin' | 'coordinator' | 'student';
+  password: string;
   is_active: boolean;
   created_by?: string;
   created_at?: string;
@@ -57,4 +58,6 @@ export type Program = {
   id: number;
   name: string;
   required_hours: number;
+  Total_Interns?: number;
+  Total_Coordinator?: number
 }

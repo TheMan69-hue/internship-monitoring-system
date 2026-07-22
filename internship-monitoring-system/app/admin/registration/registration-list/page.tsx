@@ -53,24 +53,11 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  // Create new entry TODO: modal for add
-  // const handleAdd = (newSchoolYear) => {
-  //   setSchoolYears((prev) => {
-  //     const newId = prev.length > 0 ? prev[prev.length - 1].id + 1 : 1;
-  //     return [...prev, { ...newSchoolYear, id: newId }];
-  //   });
-  // };
-  
-  // Update entry TODO: modal for edit
-  // const handleUpdate = (id: number, updated: Partial<SchoolYear>) => {
-  //   SchoolYears.map((y) => (y.id === id ? {...y, ...updated} : y))
-  // }; 
-
   return (
     //TODO: change route page
     <main className=" flex flex-col flex-1 h-full p-5">
         <div className='flex flex-row justify-between items-center text-black'>
-          <h1>Archive List</h1>
+          <h1>Registration List</h1>
           <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
         </div>
         <div>
@@ -85,12 +72,12 @@ export default function Dashboard() {
             onSemesterChange={setSelectedSemester}
           />
         </div>
-        <TableLayout<Intern> title='Section List' buttonTitle='+'  data={Data} onClick={() => setShowModal(true)}>
+        <TableLayout<Intern> title='Student List' buttonTitle='+'  data={Data} onClick={() => setShowModal(true)}>
           {(pagedData) => (
             <ReusableTable
               data={pagedData} 
               isLoading={isLoading}
-              columns={['name', 'email', 'program_id', 'academicYear', 'semester', 'status']}
+              columns={['name', 'email', 'course', 'academicYear', 'semester', 'status']}
               onRowClick={() => router.push(`/admin/intern`)}
             />
           )}
