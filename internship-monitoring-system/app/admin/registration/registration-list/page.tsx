@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import YearFilter from '@/components/table/YearFilter';
-import { mockSchoolYearLists } from '@/lib/schoolyear';
 import { mockStudentLists } from '@/lib/studentLists';
-import AddNewSchoolYear from '@/components/modals/AddNewSchoolYear';
 import Button from '@/components/buttons/buttons';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
@@ -75,29 +73,29 @@ export default function Dashboard() {
           <h1>Archive List</h1>
           <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
         </div>
-        <YearFilter
-          yearLabel="Academic Year"
-          yearOptions={yearOptions}
-          yearValue={selectedYear}
-          onYearChange={setSelectedYear}
-          semesterLabel="Semester"
-          semesterOptions={semesterOptions}
-          semesterValue={selectedSemester}
-          onSemesterChange={setSelectedSemester}
-        />
+        <div>
+          <YearFilter
+            yearLabel="Academic Year"
+            yearOptions={yearOptions}
+            yearValue={selectedYear}
+            onYearChange={setSelectedYear}
+            semesterLabel="Semester"
+            semesterOptions={semesterOptions}
+            semesterValue={selectedSemester}
+            onSemesterChange={setSelectedSemester}
+          />
+        </div>
         <TableLayout<Intern> title='Section List' buttonTitle='+'  data={Data} onClick={() => setShowModal(true)}>
           {(pagedData) => (
             <ReusableTable
               data={pagedData} 
               isLoading={isLoading}
-              columns={['name', 'email', 'course', 'academicYear', 'semester', 'status']}
+              columns={['name', 'email', 'program_id', 'academicYear', 'semester', 'status']}
               onRowClick={() => router.push(`/admin/intern`)}
             />
           )}
         </TableLayout>
-        {showModal && (
-          <AddNewSchoolYear show={showModal} onClose={() => setShowModal(false)} />
-        )}
+        {/* {showModal && ()} */}
     </main>
   );
 }

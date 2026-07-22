@@ -1,6 +1,6 @@
 export const mockStudentLists = [
   {
-    id: '1',
+    id: 1,
     name: 'Juan Dela Cruz',
     email: 'juan.delacruz@student.cvsu.edu.ph',
     course: 'Bachelor of Science in Information Technology',
@@ -13,7 +13,7 @@ export const mockStudentLists = [
     endDate: '2024-05-15',
   },
   {
-    id: '2',
+    id: 2,
     name: 'Maria Santos',
     email: 'maria.santos@student.cvsu.edu.ph',
     course: 'Bachelor of Science in Computer Science',
@@ -26,7 +26,7 @@ export const mockStudentLists = [
     endDate: '2024-05-15',
   },
   {
-    id: '3',
+    id: 3,
     name: 'Pedro Lopez',
     email: 'pedro.lopez@student.cvsu.edu.ph',
     course: 'Bachelor of Science in Information Technology',
@@ -39,7 +39,7 @@ export const mockStudentLists = [
     endDate: '2023-12-15',
   },
   {
-    id: '4',
+    id: 4,
     name: 'Ana Rodriguez',
     email: 'ana.rodriguez@student.cvsu.edu.ph',
     course: 'Bachelor of Science in Computer Science',

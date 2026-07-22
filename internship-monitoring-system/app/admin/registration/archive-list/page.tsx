@@ -3,19 +3,22 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import YearFilter from '@/components/table/YearFilter';
-import SchoolYearLists, { type SchoolYear } from '@/components/table/SchoolYear';
+import { SchoolYear } from '@/lib/types';
 import { mockSchoolYearLists } from '@/lib/schoolyear';
-import Modal from '@/components/modals/Modal';
-import Button from '@/components/buttons/buttons';
-import Dropdown from '@/components/buttons/dropdown';
+import TableLayout from '@/components/layout/TablePageLayout';
+import ReusableTable from '@/components/table/Table';
+import AddNewSchoolYear from '@/components/modals/AddNewSchoolYear';
+
+
 
 export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState<string>('');
-  const [currentActiveYear, setCurrentActiveYear] = useState<string>('');
-  const [SchoolYears, setSchoolYears] = useState<SchoolYear[]>([]);
+  const [activeSchoolYear, setActiveSchoolYear] = useState<SchoolYear | null>(null);
+  const [Data, setData] = useState<SchoolYear[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [editData, setEditData] = useState<SchoolYear | null>(null);
 
   const router = useRouter();
 
@@ -38,10 +41,16 @@ export default function Dashboard() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // TODO: Replace with actual API calls to database
-        setCurrentActiveYear('2024');
-        setSchoolYears(mockSchoolYearLists);
-        // setSchoolYears(await fetchSchoolYearsFromDB());
+        // TODO: Replace with actual API calls to database  
+        setData(mockSchoolYearLists);
+        
+        // Find active school year from mock data
+        const activeYear = mockSchoolYearLists.find((year) => year.is_active === true);
+
+        if (activeYear) {
+        setActiveSchoolYear(activeYear);
+      }
+        
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -52,102 +61,119 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  // Create new entry TODO: modal for add
-  // const handleAdd = (newSchoolYear) => {
-  //   setSchoolYears((prev) => {
-  //     const newId = prev.length > 0 ? prev[prev.length - 1].id + 1 : 1;
-  //     return [...prev, { ...newSchoolYear, id: newId }];
-  //   });
-  // };
+  // Create new entry or update existing
+  const handleAdd = (newData: Omit<SchoolYear, 'id'> & { id?: number }) => {
+    setData((prev) => {
+      // If editing, replace the existing entry
+      if (newData.id !== undefined) {
+        return prev.map((item) => (item.id === newData.id ? newData as SchoolYear : item));
+      }
+      // If adding new, append
+      const newId = prev.length > 0 ? prev[prev.length - 1].id + 1 : 1;
+      return [...prev, { ...newData, id: newId } as SchoolYear];
+    });
+    setEditData(null);
+  };
   
-  // Update entry TODO: modal for edit
-  // const handleUpdate = (id: number, updated: Partial<SchoolYear>) => {
-  //   SchoolYears.map((y) => (y.id === id ? {...y, ...updated} : y))
-  // }; 
+  // Update entry with confirmation
+  const handleEdit = (row: SchoolYear) => {
+    const confirmEdit = window.confirm(
+      `Are you sure you want to edit "${row.academicYear} - ${row.semester}"?`
+    );
+    if (!confirmEdit) return;
+    setEditData(row);
+    setShowModal(true);
+  };
+
+  // Set/remove active status (only one can be active at a time)
+  const handleSetActive = (row: SchoolYear) => {
+    // If already active, just deactivate
+    if (row.is_active) {
+      setData((prev) =>
+        prev.map((item) =>
+          item.id === row.id ? { ...item, is_active: false, status: 'inactive' as const } : item
+        )
+      );
+      setActiveSchoolYear(null);
+      return;
+    }
+
+    // Check if another entry is already active
+    const currentActive = Data.find((item) => item.is_active);
+    if (currentActive) {
+      const confirmSwitch = window.confirm(
+        `"${currentActive.academicYear} - ${currentActive.semester}" is currently active. Switch to "${row.academicYear} - ${row.semester}" instead?`
+      );
+      if (!confirmSwitch) return;
+    }
+
+    setData((prev) =>
+      prev.map((item) => ({
+        ...item,
+        is_active: item.id === row.id,
+        status: item.id === row.id ? 'active' as const : 'inactive' as const,
+      }))
+    );
+    setActiveSchoolYear({ ...row, is_active: true, status: 'active' });
+  };
+
+  // Delete entry with confirmation
+  const handleDelete = (row: SchoolYear) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${row.academicYear} - ${row.semester}"? This action cannot be undone.`
+    );
+    if (!confirmDelete) return;
+    setData((prev) => prev.filter((item) => item.id !== row.id));
+  };
 
   return (
-    
-    <div>
-        <main className=" flex flex-col flex-1 h-full p-5">
-            <div className='flex flex-row justify-between items-center text-black'>
-              <h1>Archive List</h1>
-              <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
-            </div>
-            <YearFilter
-              yearLabel="Academic Year"
-              yearOptions={yearOptions}
-              yearValue={selectedYear}
-              onYearChange={setSelectedYear}
-              semesterLabel="Semester"
-              semesterOptions={semesterOptions}
-              semesterValue={selectedSemester}
-              onSemesterChange={setSelectedSemester}
+    //TODO: change route page
+    <main className=" flex flex-col flex-1 h-full p-5">
+        <div className='flex flex-row justify-between items-center text-black'>
+          <h1>Archive List</h1>
+          <h1>{ activeSchoolYear?.academicYear || 'No Active Academic Year'}</h1>
+        </div>
+        <div>
+          <YearFilter
+            yearLabel="Academic Year"
+            yearOptions={yearOptions}
+            yearValue={selectedYear}
+            onYearChange={setSelectedYear}
+            semesterLabel="Semester"
+            semesterOptions={semesterOptions}
+            semesterValue={selectedSemester}
+            onSemesterChange={setSelectedSemester}
+          />
+        </div>
+        <TableLayout<SchoolYear> title='Section List' buttonTitle='+'  data={Data} onClick={() => { setEditData(null); setShowModal(true); }}>
+          {(pagedData) => (
+            <ReusableTable
+              data={pagedData} 
+              isLoading={isLoading}
+              columns={['academicYear', 'semester', 'status']}
+              onRowClick={() => router.push(`/admin/registration/archive-list/program-list`)}
+              showActions
+              actions={[
+                { label: 'Edit', onClick: (row) => handleEdit(row) },
+                { label: (row) => row.is_active ? 'Remove Active Status' : 'Set as Active', onClick: (row) => handleSetActive(row) },
+                { label: 'Delete', onClick: (row) => handleDelete(row) },
+              ]}
             />
-            {/*TODO: change route page */}
-            <SchoolYearLists data={SchoolYears} isLoading={isLoading} onRowClick={(SchoolYear) => router.push(`/admin/registration/archive-list/program-list`)}/> {/*${SchoolYear.id}*/}
-            <div>
-              <Button 
-              onClick={() => setShowModal(true)}
-              type="submit"
-              variant="primary"
-              size="sm"
-              >Add New Record</Button>
-            </div>
-            {showModal && (
-              <Modal
-              title='New Record'
-              onClose={() => setShowModal(false)}
-              >
-                <div className='flex flex-col text-black gap-5 items-between'>
-                  <p>School Year Timeline:</p>  
-                  <div className='flex text-black items-center gap-10'>
-                    <p>Start Date:</p>
-                    <input 
-                      className="flex p-1 text-sm text-gray-500 border border-slate-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      type="string" />
-                  </div>
-                  <div className='flex text-black items-center gap-11'>
-                    <p>End Date:</p>
-                    <input 
-                      className="flex p-1 text-sm text-gray-500 border border-slate-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      type="string" />
-                  </div>
-                  <Dropdown
-                  label="Choose Semester"
-                  options={['1st Semester', '2nd Semester', 'Summer']}
-                  onSelect={setSelectedSemester}
-                  />
-                  <p>Semester Timeline:</p>  
-                  <div className='flex text-black items-center gap-10'>
-                    <p>Start Date:</p>
-                    <input 
-                      className="flex p-1 text-sm text-gray-500 border border-slate-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      type="Date" />
-                  </div>
-                  <div className='flex text-black items-center gap-11'>
-                    <p>End Date:</p>
-                    <input 
-                      className="flex p-1 text-sm text-gray-500 border border-slate-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      type="Date" />
-                  </div>
-                  <div className='flex justify-center gap-5 mt-5'>
-                    <Button 
-                    onClick={() => setShowModal(true)}
-                    type="submit"
-                    variant="primary"
-                    size="sm"
-                    >Add</Button>
-                    <Button 
-                    onClick={() => setShowModal(false)}
-                    type="submit"
-                    variant="secondary"
-                    size="sm"
-                    >Cancel</Button>
-                  </div>
-                </div>
-              </Modal>
-            )}
-        </main>
-    </div>
+          )}
+        </TableLayout>
+        {showModal && (
+          <AddNewSchoolYear 
+            key={editData?.id ?? 'new'}
+            show={showModal}
+            onSubmit={handleAdd}
+            activeSchoolYear={activeSchoolYear} 
+            existingRecords={Data}
+            editData={editData}
+            onClose={() => {
+              setShowModal(false);
+              setEditData(null);
+          }} />
+        )}
+    </main>
   );
 }
