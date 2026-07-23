@@ -3,13 +3,20 @@
 import { useState } from 'react';
 import Modal from '@/components/modals/Modal';
 import Button from '@/components/buttons/buttons';
-import { Program } from '@/lib/types';
+
+type AdminProgram = {
+  id: number;
+  name: string;
+  required_hours: number;
+  Total_Interns?: number;
+  Total_Coordinator?: number;
+};
 
 interface AddNewProgramProps {
   show: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<Program, 'id'> & { id?: number }) => void;
-  editData?: Program | null;
+  onSubmit: (data: Omit<AdminProgram, 'id'> & { id?: number }) => void;
+  editData?: AdminProgram | null;
 }
 
 export default function AddNewProgram({

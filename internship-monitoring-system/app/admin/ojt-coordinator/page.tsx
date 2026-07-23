@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Coordinator } from '@/lib/types';
-import { mockCoordinatorList } from '@/lib/coordinatorList';
-import { mockSectionList } from '@/lib/section';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
 import AddNewCoordinator from '@/components/modals/AddNewCoordinator';
+import { getCoordinators, getSectionOptions } from '@/lib/services/admin/coordinators';
 
 export default function Dashboard() {
   const [Data, setData] = useState<Coordinator[]>([]);
+  const [sectionOptions, setSectionOptions] = useState<{ id: number; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editData, setEditData] = useState<Coordinator | null>(null);
@@ -19,8 +19,12 @@ export default function Dashboard() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // TODO: Replace with actual API calls to database
-        setData(mockCoordinatorList as Coordinator[]);
+        const [coordinators, sections] = await Promise.all([
+          getCoordinators(),
+          getSectionOptions(),
+        ]);
+        setData(coordinators);
+        setSectionOptions(sections);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -87,7 +91,7 @@ export default function Dashboard() {
             show={showModal}
             onSubmit={handleAdd}
             editData={editData}
-            sectionOptions={mockSectionList}
+            sectionOptions={sectionOptions}
             onClose={() => {
               setShowModal(false);
               setEditData(null);

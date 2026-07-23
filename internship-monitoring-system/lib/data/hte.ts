@@ -1,7 +1,7 @@
 import type { HTE } from "../types";
 export const hteData: HTE[] = [
   {
-    id: 1,
+    id: "1",
     company: "ABC Corporation",
     address: "Dasmariñas, Cavite",
     currentInterns:30,
@@ -13,7 +13,7 @@ export const hteData: HTE[] = [
   },
 
   {
-    id: 2,
+    id: "2",
     company: "XYZ Technologies",
     address: "Imus, Cavite",
     currentInterns: 43,
@@ -25,7 +25,7 @@ export const hteData: HTE[] = [
   },
 
   {
-    id: 3,
+    id: "3",
     company: "AAC Solutions",
     address: "Bacoor, Cavite",
     currentInterns: 21,

@@ -1,25 +1,32 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Program } from '@/lib/types';
-import { mockProgramLists } from '@/lib/programList';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
 import AddNewProgram from '@/components/modals/AddNewProgram';
+import { getPrograms } from '@/lib/services/admin/programs';
+
+type AdminProgram = {
+  id: number;
+  name: string;
+  required_hours: number;
+  Total_Interns?: number;
+  Total_Coordinator?: number;
+};
 
 export default function Dashboard() {
-  const [Data, setData] = useState<Program[]>([]);
+  const [Data, setData] = useState<AdminProgram[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [editData, setEditData] = useState<Program | null>(null);
+  const [editData, setEditData] = useState<AdminProgram | null>(null);
 
   // Fetch programs from database
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // TODO: Replace with actual API calls to database
-        setData(mockProgramLists);
+        const programs = await getPrograms();
+        setData(programs as unknown as AdminProgram[]);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -31,21 +38,21 @@ export default function Dashboard() {
   }, []);
 
   // Create new entry or update existing
-  const handleAdd = (newData: Omit<Program, 'id'> & { id?: number }) => {
+  const handleAdd = (newData: Omit<AdminProgram, 'id'> & { id?: number }) => {
     setData((prev) => {
       // If editing, replace the existing entry
       if (newData.id !== undefined) {
-        return prev.map((item) => (item.id === newData.id ? newData as Program : item));
+        return prev.map((item) => (item.id === newData.id ? { ...item, ...newData, id: newData.id } as AdminProgram : item));
       }
       // If adding new, append
       const newId = prev.length > 0 ? prev[prev.length - 1].id + 1 : 1;
-      return [...prev, { ...newData, id: newId } as Program];
+      return [...prev, { ...newData, id: newId } as AdminProgram];
     });
     setEditData(null);
   };
   
   // Update entry with confirmation
-  const handleEdit = (row: Program) => {
+  const handleEdit = (row: AdminProgram) => {
     const confirmEdit = window.confirm(
       `Are you sure you want to edit "${row.name}"?`
     );
@@ -55,7 +62,7 @@ export default function Dashboard() {
   };
 
   // Delete entry with confirmation
-  const handleDelete = (row: Program) => {
+  const handleDelete = (row: AdminProgram) => {
     const confirmDelete = window.confirm(
       `Are you sure you want to delete "${row.name}"? This action cannot be undone.`
     );
@@ -68,7 +75,7 @@ export default function Dashboard() {
         <div className='flex flex-row justify-between items-center text-black mb-5'>
           <h1>Program List</h1>
         </div>
-        <TableLayout<Program> title='Programs' buttonTitle='+'  data={Data} onClick={() => { setEditData(null); setShowModal(true); }}>
+        <TableLayout<AdminProgram> title='Programs' buttonTitle='+'  data={Data} onClick={() => { setEditData(null); setShowModal(true); }}>
           {(pagedData) => (
             <ReusableTable
               data={pagedData} 

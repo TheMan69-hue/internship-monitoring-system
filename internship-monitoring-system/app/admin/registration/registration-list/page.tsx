@@ -3,11 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import YearFilter from '@/components/table/YearFilter';
-import { mockStudentLists } from '@/lib/studentLists';
-import Button from '@/components/buttons/buttons';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
 import { Intern } from '@/lib/types';
+import { getAcademicPageData } from '@/lib/services/admin/academic';
 
 export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState<string>('');
@@ -18,20 +17,8 @@ export default function Dashboard() {
   const [showModal, setShowModal] = useState(false);
 
   const router = useRouter();
-
-  //TODO: Replace school_year data here from database
-  const yearOptions = [
-    { value: '2024', label: '2024-2025' },
-    { value: '2025', label: '2025-2026' },
-    { value: '2026', label: '2026-2027' },
-  ];
-
-    //TODO: Replace semesters data from database here 
-  const semesterOptions = [
-    { value: '1st', label: '1st Semester' },
-    { value: '2nd', label: '2nd Semester' },
-    { value: 'summer', label: 'Summer' },
-  ];
+  const [yearOptions, setYearOptions] = useState<{ value: string; label: string }[]>([]);
+  const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
 
 
   // Fetch current active year and SchoolYears from database
@@ -39,10 +26,11 @@ export default function Dashboard() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // TODO: Replace with actual API calls to database
-        setCurrentActiveYear('2024');
-        setData(mockStudentLists);
-        // setSchoolYears(await fetchSchoolYearsFromDB());
+        const academicData = await getAcademicPageData();
+        setCurrentActiveYear(academicData.activeSchoolYear?.academicYear ?? '');
+        setYearOptions(academicData.yearOptions);
+        setSemesterOptions(academicData.semesterOptions);
+        setData([]);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {

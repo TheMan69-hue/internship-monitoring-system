@@ -19,7 +19,11 @@ const statusStyles = {
   active: 'bg-green-100 text-green-800',
   inactive: 'bg-gray-100 text-gray-800',
   completed: 'bg-blue-100 text-blue-800',
-};
+} as const;
+
+function getStatusStyle(status: string | undefined) {
+  return statusStyles[status as keyof typeof statusStyles] ?? statusStyles.inactive;
+}
 
 export default function StudentLists({
   data,
@@ -74,9 +78,7 @@ export default function StudentLists({
                 <td key={`${intern.id}-${col}`} className="px-4 py-3 text-sm text-gray-700">
                   {col === 'totalCoordinator' ? (
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        statusStyles[intern[col] as keyof typeof statusStyles]
-                      }`}
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusStyle(String(intern[col] ?? 'inactive'))}`}
                     >
                       {String(intern[col])}
                     </span>

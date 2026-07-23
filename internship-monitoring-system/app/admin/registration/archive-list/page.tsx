@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import YearFilter from '@/components/table/YearFilter';
 import { SchoolYear } from '@/lib/types';
-import { mockSchoolYearLists } from '@/lib/schoolyear';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
 import AddNewSchoolYear from '@/components/modals/AddNewSchoolYear';
+import { getAcademicPageData } from '@/lib/services/admin/academic';
 
 
 
@@ -21,36 +21,19 @@ export default function Dashboard() {
   const [editData, setEditData] = useState<SchoolYear | null>(null);
 
   const router = useRouter();
-
-  //TODO: Replace school_year data here from database
-  const yearOptions = [
-    { value: '2024', label: '2024-2025' },
-    { value: '2025', label: '2025-2026' },
-    { value: '2026', label: '2026-2027' },
-  ];
-
-    //TODO: Replace semesters data from database here 
-  const semesterOptions = [
-    { value: '1st', label: '1st Semester' },
-    { value: '2nd', label: '2nd Semester' },
-    { value: 'summer', label: 'Summer' },
-  ];
+  const [yearOptions, setYearOptions] = useState<{ value: string; label: string }[]>([]);
+  const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
 
   // Fetch current active year and SchoolYears from database
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // TODO: Replace with actual API calls to database  
-        setData(mockSchoolYearLists);
-        
-        // Find active school year from mock data
-        const activeYear = mockSchoolYearLists.find((year) => year.is_active === true);
-
-        if (activeYear) {
-        setActiveSchoolYear(activeYear);
-      }
-        
+        const academicData = await getAcademicPageData();
+        setData(academicData.schoolYears);
+        setYearOptions(academicData.yearOptions);
+        setSemesterOptions(academicData.semesterOptions);
+        setActiveSchoolYear(academicData.activeSchoolYear);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {

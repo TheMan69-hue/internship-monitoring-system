@@ -12,9 +12,10 @@ export default function StatusBadge({
   const colors = {
         Approved: "bg-[#16A34A] text-white",
         Pending: "bg-[#EAB308] text-white",
+        Rejected: "bg-[#DC2626] text-white",
         Active: "bg-[#2563EB] text-white",
         Completed: "bg-[#6B7280] text-white",
-    }[status];
+    }[status] ?? "bg-[#6B7280] text-white";
 
   return (
       <span

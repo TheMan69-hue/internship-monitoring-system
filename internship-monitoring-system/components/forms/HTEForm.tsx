@@ -63,7 +63,7 @@ export default function HTEForm({
         <FormInput
           label="Contact Person"
           name="contactPerson"
-          value={form.contactPerson}
+          value={form.contactPerson ?? ""}
           onChange={handleInputChange}
         />
 
@@ -71,14 +71,14 @@ export default function HTEForm({
           label="Email"
           type="email"
           name="email"
-          value={form.email}
+          value={form.email ?? ""}
           onChange={handleInputChange}
         />
 
         <FormInput
           label="Contact Number"
           name="phone"
-          value={form.phone}
+          value={form.phone ?? ""}
           onChange={handleInputChange}
         />
 
@@ -88,7 +88,7 @@ export default function HTEForm({
         label="Company Address"
         name="address"
         rows={4}
-        value={form.address}
+        value={form.address ?? ""}
         onChange={handleTextareaChange}
       />
 
@@ -97,7 +97,7 @@ export default function HTEForm({
         <FormSelect
           label="Work Schedule"
           name="workSchedule"
-          value={form.workSchedule}
+          value={form.workSchedule ?? ""}
           options={[
             "Monday - Friday",
             "Monday - Saturday",
@@ -109,7 +109,7 @@ export default function HTEForm({
         <FormInput
           label="Working Hours"
           name="workingHours"
-          value={form.workingHours}
+          value={form.workingHours ?? ""}
           onChange={handleInputChange}
         />
 
