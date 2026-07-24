@@ -28,7 +28,6 @@ export default function LoginPage() {
 
 
     const {
-        data,
         error
         } = await supabase.auth.signInWithPassword({
         email,
@@ -57,13 +56,19 @@ export default function LoginPage() {
 
         }
 
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
 
-        // Refresh Next.js server so it receives the auth cookie
+        const role = profile?.role ?? "coordinator";
 
         router.refresh();
 
-
-        router.push("/coordinator/dashboard");
+        router.push(
+          role === "admin" ? "/admin/dashboard" : "/coordinator/dashboard"
+        );
 
   }
 

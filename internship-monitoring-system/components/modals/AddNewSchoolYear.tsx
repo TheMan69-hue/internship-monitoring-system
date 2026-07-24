@@ -9,7 +9,7 @@ import { SchoolYear } from '@/lib/types';
 interface AddNewSchoolYearProps {
   show: boolean;
   onClose: () => void;
-  onSubmit: (record: Omit<SchoolYear, 'id'> & { id?: number }) => void;
+  onSubmit: (record: Omit<SchoolYear, 'id'> & { id?: string }) => void;
   activeSchoolYear?: SchoolYear | null;
   existingRecords?: SchoolYear[];
   editData?: SchoolYear | null;
@@ -204,7 +204,7 @@ export default function AddNewSchoolYear({
                   } else {
                     // 2nd/Summer: validate end date stays within active school year
                     if (activeSchoolYear) {
-                      const [activeStart, activeEnd] = activeSchoolYear.academicYear.split("-").map(Number)
+                      const [, activeEnd] = activeSchoolYear.academicYear.split("-").map(Number)
                       const activeEndDate = new Date(activeEnd, 7, 31); // August 31
                       if (selectedDate > activeEndDate) {
                         setEndDateError(`End date must be within the active school year (${activeSchoolYear.academicYear}).`);

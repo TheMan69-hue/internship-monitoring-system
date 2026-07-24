@@ -96,24 +96,6 @@ export default function HTEDetailsModal({
             {hte.currentInterns}
           </p>
         </div>
-
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Work Schedule
-          </p>
-          <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.workSchedule ?? "N/A"}
-          </p>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-            Working Hours
-          </p>
-          <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.workingHours ?? "N/A"}
-          </p>
-        </div>
       </div>
 
       <div className="flex justify-end gap-3 border-t bg-[#F9FAFB] px-6 py-4">

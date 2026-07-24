@@ -18,7 +18,6 @@ export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState<string>('');
   const [currentActiveYear, setCurrentActiveYear] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
   const [auditData, setAuditData] = useState<AuditLogs[]>([]);
   const [stats, setStats] = useState<AdminDashboardStats>({
     registeredStudents: 0,
@@ -34,7 +33,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
       try {
         const [dashboardStats, auditLogs, academicData] = await Promise.all([
           getAdminDashboardStats(),
@@ -54,8 +52,6 @@ export default function Dashboard() {
         setSemesterOptions(academicData.semesterOptions);
       } catch (error) {
         console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -110,7 +106,6 @@ export default function Dashboard() {
             <AuditLog
               title='Audit Logs'
               data={auditData}
-              isLoading={isLoading}
             />
           </div>
           <div>

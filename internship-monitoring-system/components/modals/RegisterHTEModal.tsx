@@ -4,7 +4,6 @@ import { useState } from "react";
 import Modal from "./Modal";
 import FormInput from "@/components/forms/FormInput";
 import FormTextarea from "@/components/forms/FormTextarea";
-import FormSelect from "@/components/forms/FormSelect";
 import { createHTEAction } from "@/lib/actions/hte";
 
 type RegisterHTEModalProps = {
@@ -24,8 +23,6 @@ export default function RegisterHTEModal({
     contact_person: "",
     email: "",
     contact_number: "",
-    work_schedule: "Monday - Friday",
-    working_hours: "",
     address: "",
   });
 
@@ -37,12 +34,6 @@ export default function RegisterHTEModal({
 
   const handleTextareaChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSelectChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -91,26 +82,6 @@ export default function RegisterHTEModal({
           name="contact_number"
           value={form.contact_number}
           onChange={handleInputChange}
-        />
-
-        <FormSelect
-          label="Work Schedule"
-          name="work_schedule"
-          value={form.work_schedule}
-          options={[
-            "Monday - Friday",
-            "Monday - Saturday",
-            "Flexible",
-          ]}
-          onChange={handleSelectChange}
-        />
-
-        <FormInput
-          label="Working Hours"
-          name="working_hours"
-          value={form.working_hours}
-          onChange={handleInputChange}
-          placeholder="e.g. 8:00 AM - 5:00 PM"
         />
 
         <div className="col-span-2">

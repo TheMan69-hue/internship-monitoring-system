@@ -111,13 +111,13 @@ export async function getAcademicPageData(): Promise<AcademicPageData> {
 
   const schoolYearMap = new Map(schoolYears.map((year) => [year.id, year]));
 
-  const mappedSchoolYears: SchoolYear[] = semesters.map((semester, index) => {
+  const mappedSchoolYears: SchoolYear[] = semesters.map((semester) => {
     const parentSchoolYear = semester.school_year_id
       ? schoolYearMap.get(semester.school_year_id)
       : undefined;
 
     return {
-      id: index + 1,
+      id: semester.id ?? "",
       academicYear: parentSchoolYear?.name ?? "Unknown School Year",
       semester: normalizeSemesterName(semester.name),
       is_active: Boolean(semester.is_active),
@@ -139,7 +139,7 @@ export async function getAcademicPageData(): Promise<AcademicPageData> {
 
   const activeSchoolYear: SchoolYear | null = schoolYears.find((year) => year.is_active)
     ? {
-        id: 1,
+        id: schoolYears.find((year) => year.is_active)?.id ?? "",
         academicYear: schoolYears.find((year) => year.is_active)?.name ?? "",
         semester: "1st",
         is_active: true,

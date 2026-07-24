@@ -9,9 +9,9 @@ import { Coordinator } from '@/lib/types';
 interface AddNewCoordinatorProps {
   show: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<Coordinator, 'id' | 'password'> & { id?: number; sections?: number[]; password?: string }) => void;
-  editData?: (Coordinator & { sections?: number[] }) | null;
-  sectionOptions?: { id: number; name: string }[];
+  onSubmit: (data: Omit<Coordinator, 'id' | 'password'> & { id?: string; sections?: string[]; password?: string }) => void;
+  editData?: (Coordinator & { sections?: string[] }) | null;
+  sectionOptions?: { id: string; name: string }[];
 }
 
 export default function AddNewCoordinator({
@@ -28,7 +28,7 @@ export default function AddNewCoordinator({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [confirmError, setConfirmError] = useState('');
   const [changePassword, setChangePassword] = useState(false);
-  const [selectedSections, setSelectedSections] = useState<number[]>(
+  const [selectedSections, setSelectedSections] = useState<string[]>(
     editData?.sections || []
   );
   const [error, setError] = useState('');
@@ -65,7 +65,7 @@ export default function AddNewCoordinator({
     }
 
     setError('');
-    const submitData: Omit<Coordinator, 'id' | 'password'> & { id?: number; sections?: number[]; password?: string } = {
+    const submitData: Omit<Coordinator, 'id' | 'password'> & { id?: string; sections?: string[]; password?: string } = {
       ...(editData && { id: editData.id }),
       name: name.trim(),
       email: email.trim(),

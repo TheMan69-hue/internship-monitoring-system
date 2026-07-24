@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function createHTEAction(data: {
   company_name: string;
@@ -9,13 +9,9 @@ export async function createHTEAction(data: {
   contact_person: string;
   contact_number: string;
   email: string;
-  work_schedule: string;
-  working_hours: string;
 }) {
   try {
-    const supabase = await createClient();
-
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("hte_companies")
       .insert({
         company_name: data.company_name,
@@ -23,8 +19,6 @@ export async function createHTEAction(data: {
         contact_person: data.contact_person,
         contact_number: data.contact_number,
         email: data.email,
-        work_schedule: data.work_schedule,
-        working_hours: data.working_hours,
         status: "Active",
       });
 
@@ -54,14 +48,10 @@ export async function updateHTEAction(
     contact_person: string;
     contact_number: string;
     email: string;
-    work_schedule: string;
-    working_hours: string;
   }
 ) {
   try {
-    const supabase = await createClient();
-
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("hte_companies")
       .update({
         company_name: data.company_name,
@@ -69,8 +59,6 @@ export async function updateHTEAction(
         contact_person: data.contact_person,
         contact_number: data.contact_number,
         email: data.email,
-        work_schedule: data.work_schedule,
-        working_hours: data.working_hours,
       })
       .eq("id", hteId);
 
@@ -94,9 +82,7 @@ export async function updateHTEAction(
 
 export async function deleteHTEAction(hteId: string) {
   try {
-    const supabase = await createClient();
-
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("hte_companies")
       .delete()
       .eq("id", hteId);

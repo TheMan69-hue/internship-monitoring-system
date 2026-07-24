@@ -44,10 +44,24 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData();
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const academicData = await getAcademicPageData();
+        setData(academicData.schoolYears);
+        setYearOptions(academicData.yearOptions);
+        setSemesterOptions(academicData.semesterOptions);
+        setActiveSchoolYear(academicData.activeSchoolYear);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
   }, []);
 
-  const handleAdd = async (newData: Omit<SchoolYear, 'id'> & { id?: number }) => {
+  const handleAdd = async (newData: Omit<SchoolYear, 'id'> & { id?: string }) => {
     setActionLoading(true);
     try {
       const result = await createSchoolYear({

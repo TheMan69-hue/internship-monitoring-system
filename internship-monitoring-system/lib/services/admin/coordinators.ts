@@ -36,7 +36,7 @@ export async function getCoordinators(): Promise<Coordinator[]> {
       : undefined;
 
     return {
-      id: Number(coordinator.id) || 0,
+      id: coordinator.id ?? "",
       name: profile?.full_name ?? "Unnamed Coordinator",
       email: profile?.email ?? "",
       contact_num: coordinator.employee_number ?? coordinator.department ?? "",
@@ -48,7 +48,7 @@ export async function getCoordinators(): Promise<Coordinator[]> {
   });
 }
 
-export async function getSectionOptions(): Promise<{ id: number; name: string }[]> {
+export async function getSectionOptions(): Promise<{ id: string; name: string }[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -61,7 +61,7 @@ export async function getSectionOptions(): Promise<{ id: number; name: string }[
   }
 
   return (data ?? []).map((section) => ({
-    id: Number(section.id) || 0,
+    id: section.id ?? "",
     name: section.section_name ?? "Unnamed Section",
   }));
 }

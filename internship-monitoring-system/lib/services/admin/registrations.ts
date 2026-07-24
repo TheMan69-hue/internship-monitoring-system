@@ -42,7 +42,7 @@ export async function getAdminRegistrations(): Promise<Intern[]> {
   return (data ?? []).map((reg) => {
     const row = reg as unknown as DbRegistration;
     return {
-      id: Number(row.id) || 0,
+      id: row.id ?? "",
       name: row.name ?? "",
       email: row.email_address ?? "",
       course: row.programs?.program_name ?? row.program ?? "",

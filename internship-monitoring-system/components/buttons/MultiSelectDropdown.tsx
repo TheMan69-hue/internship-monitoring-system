@@ -3,14 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 
 export interface DropdownOption {
-  id: number;
+  id: string;
   name: string;
 }
 
 interface MultiSelectDropdownProps {
   options: DropdownOption[];
-  selected: number[];
-  onChange: (selected: number[]) => void;
+  selected: string[];
+  onChange: (selected: string[]) => void;
   placeholder?: string;
   label?: string;
 }
@@ -52,7 +52,7 @@ export default function MultiSelectDropdown({
     opt.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggle = (id: number) => {
+  const toggle = (id: string) => {
     const next = selected.includes(id)
       ? selected.filter((sid) => sid !== id)
       : [...selected, id];

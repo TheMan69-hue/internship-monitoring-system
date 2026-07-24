@@ -12,7 +12,7 @@ import {
 } from '@/lib/actions/programs';
 
 type AdminProgram = {
-  id: number;
+  id: string;
   name: string;
   required_hours: number;
   Total_Interns?: number;
@@ -39,10 +39,21 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData();
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const programs = await getPrograms();
+        setData(programs as unknown as AdminProgram[]);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
   }, []);
 
-  const handleAdd = async (newData: Omit<AdminProgram, 'id'> & { id?: number }) => {
+  const handleAdd = async (newData: Omit<AdminProgram, 'id'> & { id?: string }) => {
     setActionLoading(true);
     try {
       const result = await createProgram({
@@ -61,7 +72,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleEdit = async (newData: Omit<AdminProgram, 'id'> & { id?: number }) => {
+  const handleEdit = async (newData: Omit<AdminProgram, 'id'> & { id?: string }) => {
     if (!newData.id) return;
     setActionLoading(true);
     try {

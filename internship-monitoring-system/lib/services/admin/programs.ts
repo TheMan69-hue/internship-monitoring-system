@@ -54,7 +54,7 @@ export async function getPrograms(): Promise<Program[]> {
   return (programsData ?? []).map((program) => {
     const p = program as unknown as DbProgram;
     return {
-      id: Number(p.id) || 0,
+      id: p.id ?? "",
       name: p.program_name ?? "Unnamed Program",
       required_hours: p.required_hours ?? 0,
       Total_Interns: studentsByProgram.get(p.id) ?? 0,

@@ -95,7 +95,7 @@ export interface CoordinatorAssignment {
 }
 
 export type Intern = {
-  id: number;
+  id: string;
   name: string;
   email: string;
   course: string;
@@ -109,7 +109,7 @@ export type Intern = {
 }
 
 export type Coordinator = {
-  id: number;
+  id: string;
   name: string;
   email: string;
   contact_num: string;
@@ -121,16 +121,16 @@ export type Coordinator = {
 }
 
 export type Section = {
-  id: number;
+  id: string;
   program_id: string;
   school_year: string;
   name: string;
-  coordinator_id: number;
+  coordinator_id: string;
   created_at: string;
 }
 
 export type SchoolYear = {
-  id: number;
+  id: string;
   academicYear: string;
   semester: '1st' | '2nd' | 'summer';
   is_active: boolean;
@@ -140,7 +140,7 @@ export type SchoolYear = {
 }
 
 export type Program = {
-  id: number;
+  id: string;
   name: string;
   required_hours: number;
   Total_Interns?: number;

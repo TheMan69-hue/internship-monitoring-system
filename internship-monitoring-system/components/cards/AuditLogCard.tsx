@@ -11,7 +11,6 @@ export interface AuditLogs {
 interface AuditLogCardProps {
   title: string;
   data: AuditLogs[];
-  isLoading?: boolean;
   onRowClick?: (AuditLog: AuditLogs) => void;
   columns?: (keyof AuditLogs)[];
 };
@@ -26,7 +25,6 @@ const statusStyles = {
 export default function AuditLogCard({
   title,
   data,
-  isLoading = false,
   onRowClick,
   columns = ['date', 'time', 'user_id', 'action', 'status'],
 }: AuditLogCardProps) {

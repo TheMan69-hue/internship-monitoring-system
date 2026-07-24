@@ -14,7 +14,7 @@ import {
 
 export default function Dashboard() {
   const [Data, setData] = useState<Coordinator[]>([]);
-  const [sectionOptions, setSectionOptions] = useState<{ id: number; name: string }[]>([]);
+  const [sectionOptions, setSectionOptions] = useState<{ id: string; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editData, setEditData] = useState<Coordinator | null>(null);
@@ -37,10 +37,25 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData();
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const [coordinators, sections] = await Promise.all([
+          getCoordinators(),
+          getSectionOptions(),
+        ]);
+        setData(coordinators);
+        setSectionOptions(sections);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
   }, []);
 
-  const handleAdd = async (newData: Omit<Coordinator, 'id' | 'password'> & { id?: number; sections?: number[]; password?: string }) => {
+  const handleAdd = async (newData: Omit<Coordinator, 'id' | 'password'> & { id?: string; sections?: string[]; password?: string }) => {
     setActionLoading(true);
     try {
       const result = await createCoordinator({
@@ -62,7 +77,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleEdit = async (newData: Omit<Coordinator, 'id' | 'password'> & { id?: number; sections?: number[]; password?: string }) => {
+  const handleEdit = async (newData: Omit<Coordinator, 'id' | 'password'> & { id?: string; sections?: string[]; password?: string }) => {
     if (!newData.id) return;
     setActionLoading(true);
     try {

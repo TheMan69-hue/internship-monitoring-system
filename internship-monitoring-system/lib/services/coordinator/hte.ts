@@ -7,8 +7,6 @@ type HTEWithCount = {
   contact_person: string | null;
   contact_number: string | null;
   email: string | null;
-  work_schedule: string | null;
-  working_hours: string | null;
   status: string;
   gps_coordinates: string | null;
   currentInterns: number;
@@ -37,8 +35,6 @@ export async function getHTEList() {
       contact_person,
       contact_number,
       email,
-      work_schedule,
-      working_hours,
       status,
       gps_coordinates
     `)
@@ -73,8 +69,6 @@ export async function getHTEList() {
     contact_person: hte.contact_person,
     contact_number: hte.contact_number,
     email: hte.email,
-    work_schedule: hte.work_schedule,
-    working_hours: hte.working_hours,
     status: hte.status,
     gps_coordinates: hte.gps_coordinates,
     currentInterns: internCounts.get(hte.id) ?? 0,

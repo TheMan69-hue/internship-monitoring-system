@@ -17,8 +17,6 @@ type HTEWithCount = {
   contact_person: string | null;
   contact_number: string | null;
   email: string | null;
-  work_schedule: string | null;
-  working_hours: string | null;
   status: string;
   gps_coordinates: string | null;
   currentInterns: number;
@@ -66,8 +64,8 @@ export default function HTEManagementClient({
     contactPerson: hte.contact_person ?? null,
     email: hte.email ?? null,
     phone: hte.contact_number ?? null,
-    workSchedule: hte.work_schedule ?? null,
-    workingHours: hte.working_hours ?? null,
+    workSchedule: null,
+    workingHours: null,
     currentInterns: hte.currentInterns,
   });
 

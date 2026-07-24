@@ -9,7 +9,7 @@ export async function createCoordinator(data: {
   email: string;
   contact_num: string;
   password: string;
-  section_ids: number[];
+  section_ids: string[];
 }) {
   try {
     const { data: authData, error: authError } =
@@ -81,7 +81,7 @@ export async function updateCoordinator(
   data: {
     name?: string;
     contact_num?: string;
-    section_ids?: number[];
+    section_ids?: string[];
   }
 ) {
   try {

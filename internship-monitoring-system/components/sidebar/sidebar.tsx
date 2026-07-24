@@ -1,15 +1,17 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { LayoutDashboard, 
           UserPlus, 
           Users, 
           UserStar, 
           FileUser, 
-          ChevronDown 
+          ChevronDown,
+          LogOut
         } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 interface AdminRoute {
   label: string;
@@ -34,14 +36,18 @@ const adminRoutes: AdminRoute[] = [
 export default function Sidebar() {
   const [open, setOpen] = useState<Record<number, boolean>>({});
   const pathname = usePathname();
+  const router = useRouter();
 
   const isActiveLink = (href?: string) => pathname === href;
-  const isGroupActive = (route: (typeof adminRoutes)[number]) =>
-    Boolean(route.href && pathname === route.href) ||
-    Boolean(route.children?.some((child) => pathname === child.href));
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
   return (
-    <aside className='bg-white h-full overflow-y-auto shrink-0 w-70 rounded-r-lg border-r border-slate-200 flex-none'>
+    <aside className='bg-white h-full overflow-y-auto shrink-0 w-70 rounded-r-lg border-r border-slate-200 flex flex-col'>
       <div className='m-5'>
         <div className='py-10 rounded-md'>
           <h1 className='text-black text-center font-semibold'>Admin Panel</h1>
@@ -108,6 +114,16 @@ export default function Sidebar() {
             ))}
           </ul>
         </nav>
+      </div>
+
+      <div className="mt-auto p-5 border-t border-slate-200">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 rounded-[20px] bg-[#CDCDCD] py-2 text-sm font-medium text-[#000000] hover:bg-[#696969] transition-colors duration-200"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
       </div>
     </aside>
   );

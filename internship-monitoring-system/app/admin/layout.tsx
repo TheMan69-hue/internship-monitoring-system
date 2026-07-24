@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { TextAlignJustify, LogOut, User } from 'lucide-react';
+import { TextAlignJustify, User } from 'lucide-react';
 import Sidebar from '@/components/sidebar/sidebar';
 import { createClient } from '@/lib/supabase/client';
 
@@ -14,7 +13,6 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   const [userName, setUserName] = useState('Admin');
   const [userEmail, setUserEmail] = useState('admin@example.com');
@@ -55,12 +53,6 @@ export default function AdminLayout({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
-  };
-
   return (
     <div className='flex flex-col h-screen overflow-hidden bg-gray-100'>
       <header className="bg-white w-full border-b-slate-200 border-b-1">
@@ -75,39 +67,29 @@ export default function AdminLayout({
             <TextAlignJustify className='text-slate-400' />
           </button>
 
-          <div className="flex items-center gap-3">
-            <div className="relative" ref={profileRef}>
-              <button
-                type="button"
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-2 rounded-lg hover:bg-gray-100 transition-colors"
-                aria-expanded={profileOpen}
-                aria-haspopup="true"
-              >
-                <span className="text-sm font-medium text-gray-900">{userName}</span>
-                <User className="w-5 h-5 text-gray-600" />
-              </button>
-
-              {profileOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900">{userName}</p>
-                      <p className="text-xs text-gray-500">{userEmail}</p>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
+          <div className="relative" ref={profileRef}>
             <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+              type="button"
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="flex items-center gap-2 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-expanded={profileOpen}
+              aria-haspopup="true"
             >
-              <LogOut className="w-4 h-4" />
-              Logout
+              <span className="text-sm font-medium text-gray-900">{userName}</span>
+              <User className="w-5 h-5 text-gray-600" />
             </button>
+
+            {profileOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
+                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900">{userName}</p>
+                    <p className="text-xs text-gray-500">{userEmail}</p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>

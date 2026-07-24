@@ -31,8 +31,6 @@ export default function HTEFormModal({
       contact_person: updatedHTE.contactPerson ?? "",
       contact_number: updatedHTE.phone ?? "",
       email: updatedHTE.email ?? "",
-      work_schedule: updatedHTE.workSchedule ?? "",
-      working_hours: updatedHTE.workingHours ?? "",
     });
     setLoading(false);
 

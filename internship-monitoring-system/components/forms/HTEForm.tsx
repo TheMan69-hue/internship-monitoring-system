@@ -6,7 +6,6 @@ import type { HTE } from "@/lib/types";
 
 import FormInput from "./FormInput";
 import FormTextarea from "./FormTextarea";
-import FormSelect from "./FormSelect";
 
 type HTEFormProps = {
   initialData: HTE;
@@ -34,15 +33,6 @@ export default function HTEForm({
 
   const handleTextareaChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSelectChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
   ) => {
     setForm({
       ...form,
@@ -93,29 +83,6 @@ export default function HTEForm({
         value={form.address ?? ""}
         onChange={handleTextareaChange}
       />
-
-      <div className="grid grid-cols-2 gap-6">
-
-        <FormSelect
-          label="Work Schedule"
-          name="workSchedule"
-          value={form.workSchedule ?? ""}
-          options={[
-            "Monday - Friday",
-            "Monday - Saturday",
-            "Flexible",
-          ]}
-          onChange={handleSelectChange}
-        />
-
-        <FormInput
-          label="Working Hours"
-          name="workingHours"
-          value={form.workingHours ?? ""}
-          onChange={handleInputChange}
-        />
-
-      </div>
 
       <div className="flex justify-end gap-3 border-t pt-6">
 

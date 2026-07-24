@@ -5,7 +5,7 @@ import Modal from '@/components/modals/Modal';
 import Button from '@/components/buttons/buttons';
 
 type AdminProgram = {
-  id: number;
+  id: string;
   name: string;
   required_hours: number;
   Total_Interns?: number;
@@ -15,7 +15,7 @@ type AdminProgram = {
 interface AddNewProgramProps {
   show: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<AdminProgram, 'id'> & { id?: number }) => void;
+  onSubmit: (data: Omit<AdminProgram, 'id'> & { id?: string }) => void;
   editData?: AdminProgram | null;
 }
 
