@@ -87,22 +87,14 @@ export interface AttendanceGroup {
   attendanceHistory: AttendanceLog[];
 }
 
-export interface Program {
-  id: string;
-  programName: string;
-}
-
-export interface Section {
-  id: string;
-  sectionName: string;
-}
 export interface CoordinatorAssignment {
   id: string;
   coordinatorId: string;
   programId: string;
   sectionId: string;
 }
-  export type Intern = {
+
+export type Intern = {
   id: number;
   name: string;
   email: string;

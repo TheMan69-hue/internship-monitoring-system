@@ -137,13 +137,13 @@ export async function getAcademicPageData(): Promise<AcademicPageData> {
     label: semester.name ?? "Unnamed Semester",
   }));
 
-  const activeSchoolYear = schoolYears.find((year) => year.is_active)
+  const activeSchoolYear: SchoolYear | null = schoolYears.find((year) => year.is_active)
     ? {
         id: 1,
         academicYear: schoolYears.find((year) => year.is_active)?.name ?? "",
         semester: "1st",
         is_active: true,
-        status: "active" as const,
+        status: "active",
       }
     : null;
 

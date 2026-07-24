@@ -35,10 +35,6 @@ export default function LoginPage() {
         password,
         });
 
-        console.log("LOGIN RESULT:", data);
-
-
-
    if(error){
 
         setError(error.message);
@@ -46,19 +42,11 @@ export default function LoginPage() {
         return;
 
     }
-        const sessionCheck = await supabase.auth.getSession();
-
-        console.log("SESSION CHECK:", sessionCheck.data.session);
-
-
         const {
         data: {
             session
         }
         } = await supabase.auth.getSession();
-
-
-        console.log("SESSION:", session);
 
 
         if(!session){

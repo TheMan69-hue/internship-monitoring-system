@@ -93,7 +93,6 @@ export default function AddNewSchoolYear({
     };
 
     onSubmit(newRecord);
-    console.log("New SchoolYear record:", newRecord);
     onClose();
   };
 

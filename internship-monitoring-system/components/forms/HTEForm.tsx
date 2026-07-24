@@ -12,12 +12,14 @@ type HTEFormProps = {
   initialData: HTE;
   onSave: (hte: HTE) => void;
   onCancel: () => void;
+  loading?: boolean;
 };
 
 export default function HTEForm({
   initialData,
   onSave,
   onCancel,
+  loading = false,
 }: HTEFormProps) {
   const [form, setForm] = useState(initialData);
 
@@ -126,9 +128,10 @@ export default function HTEForm({
 
         <button
           onClick={() => onSave(form)}
-          className="rounded-[10px] bg-[#2563EB] px-5 py-2 text-white hover:bg-[#1D4ED8]"
+          disabled={loading}
+          className="rounded-[10px] bg-[#2563EB] px-5 py-2 text-white hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Save Changes
+          {loading ? "Saving..." : "Save Changes"}
         </button>
 
       </div>

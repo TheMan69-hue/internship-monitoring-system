@@ -13,6 +13,8 @@ type AttendanceLogsClientProps = {
   attendanceLogs: AttendanceGroup[];
 };
 
+const PAGE_SIZE = 10;
+
 export default function AttendanceLogsClient({
   attendanceLogs,
 }: AttendanceLogsClientProps) {
@@ -22,6 +24,7 @@ export default function AttendanceLogsClient({
   const [selectedProgram, setSelectedProgram] = useState("All");
   const [selectedSection, setSelectedSection] = useState("All");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const programs = [
     "All",
@@ -58,6 +61,11 @@ export default function AttendanceLogsClient({
     );
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredAttendance.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIdx = (safePage - 1) * PAGE_SIZE;
+  const pagedAttendance = filteredAttendance.slice(startIdx, startIdx + PAGE_SIZE);
+
   return (
     <div className="rounded-[20px] bg-white p-6 shadow-sm">
       <h2 className="mb-6 text-3xl font-semibold text-[#111827]">
@@ -74,7 +82,10 @@ export default function AttendanceLogsClient({
 
             <select
               value={selectedProgram}
-              onChange={(e) => setSelectedProgram(e.target.value)}
+              onChange={(e) => {
+                setSelectedProgram(e.target.value);
+                setPage(1);
+              }}
               className="w-40 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]"
             >
               {programs.map((program) => (
@@ -95,7 +106,10 @@ export default function AttendanceLogsClient({
 
             <select
               value={selectedSection}
-              onChange={(e) => setSelectedSection(e.target.value)}
+              onChange={(e) => {
+                setSelectedSection(e.target.value);
+                setPage(1);
+              }}
               className="w-40 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]"
             >
               {sections.map((section) => (
@@ -112,13 +126,16 @@ export default function AttendanceLogsClient({
 
         <SearchInput
           value={search}
-          onChange={setSearch}
+          onChange={(val) => {
+            setSearch(val);
+            setPage(1);
+          }}
           placeholder="Search student number or name..."
         />
       </div>
 
       <DataTable columns={attendanceColumns}>
-        {filteredAttendance.map((student) => {
+        {pagedAttendance.map((student) => {
           const latestAttendance = student.attendanceHistory[0];
 
           return (
@@ -157,15 +174,27 @@ export default function AttendanceLogsClient({
 
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm text-[#374151]">
-          Showing {filteredAttendance.length} of {attendanceLogs.length} students
+          Showing {startIdx + 1}–{Math.min(startIdx + PAGE_SIZE, filteredAttendance.length)} of {filteredAttendance.length} students
         </p>
 
         <div className="flex items-center gap-2">
-          <button className="rounded border border-[#D1D5DB] bg-white px-3 py-1 text-[#374151] hover:bg-[#F3F4F6]">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+            className="rounded border border-[#D1D5DB] bg-white px-3 py-1 text-[#374151] hover:bg-[#F3F4F6] disabled:cursor-not-allowed disabled:opacity-50"
+          >
             Prev
           </button>
 
-          <button className="rounded border border-[#D1D5DB] bg-white px-3 py-1 text-[#374151] hover:bg-[#F3F4F6]">
+          <span className="text-sm text-[#374151]">
+            {safePage} / {totalPages}
+          </span>
+
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+            className="rounded border border-[#D1D5DB] bg-white px-3 py-1 text-[#374151] hover:bg-[#F3F4F6] disabled:cursor-not-allowed disabled:opacity-50"
+          >
             Next
           </button>
         </div>

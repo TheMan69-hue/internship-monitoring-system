@@ -29,12 +29,8 @@ export async function getRejectedApplications() {
 
   if (error) {
     throw error;
-    console.log(error);
   }
-  console.log(
-    "REJECTED DATA:",
-    data
-    );
+
   return data ?? [];
 
 }

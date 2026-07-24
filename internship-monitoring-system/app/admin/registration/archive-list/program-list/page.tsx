@@ -5,6 +5,11 @@ import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
 import AddNewProgram from '@/components/modals/AddNewProgram';
 import { getPrograms } from '@/lib/services/admin/programs';
+import {
+  createProgram,
+  updateProgram,
+  deleteProgram,
+} from '@/lib/actions/programs';
 
 type AdminProgram = {
   id: number;
@@ -19,40 +24,64 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editData, setEditData] = useState<AdminProgram | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Fetch programs from database
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const programs = await getPrograms();
+      setData(programs as unknown as AdminProgram[]);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const programs = await getPrograms();
-        setData(programs as unknown as AdminProgram[]);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
-  // Create new entry or update existing
-  const handleAdd = (newData: Omit<AdminProgram, 'id'> & { id?: number }) => {
-    setData((prev) => {
-      // If editing, replace the existing entry
-      if (newData.id !== undefined) {
-        return prev.map((item) => (item.id === newData.id ? { ...item, ...newData, id: newData.id } as AdminProgram : item));
+  const handleAdd = async (newData: Omit<AdminProgram, 'id'> & { id?: number }) => {
+    setActionLoading(true);
+    try {
+      const result = await createProgram({
+        program_name: newData.name,
+        required_hours: newData.required_hours,
+      });
+
+      if (result.success) {
+        await fetchData();
+      } else {
+        alert(result.message ?? 'Failed to create program.');
       }
-      // If adding new, append
-      const newId = prev.length > 0 ? prev[prev.length - 1].id + 1 : 1;
-      return [...prev, { ...newData, id: newId } as AdminProgram];
-    });
-    setEditData(null);
+    } finally {
+      setActionLoading(false);
+      setEditData(null);
+    }
   };
-  
-  // Update entry with confirmation
-  const handleEdit = (row: AdminProgram) => {
+
+  const handleEdit = async (newData: Omit<AdminProgram, 'id'> & { id?: number }) => {
+    if (!newData.id) return;
+    setActionLoading(true);
+    try {
+      const result = await updateProgram(String(newData.id), {
+        program_name: newData.name,
+        required_hours: newData.required_hours,
+      });
+
+      if (result.success) {
+        await fetchData();
+      } else {
+        alert(result.message ?? 'Failed to update program.');
+      }
+    } finally {
+      setActionLoading(false);
+      setEditData(null);
+    }
+  };
+
+  const handleEditClick = (row: AdminProgram) => {
     const confirmEdit = window.confirm(
       `Are you sure you want to edit "${row.name}"?`
     );
@@ -61,46 +90,57 @@ export default function Dashboard() {
     setShowModal(true);
   };
 
-  // Delete entry with confirmation
-  const handleDelete = (row: AdminProgram) => {
+  const handleDelete = async (row: AdminProgram) => {
     const confirmDelete = window.confirm(
       `Are you sure you want to delete "${row.name}"? This action cannot be undone.`
     );
     if (!confirmDelete) return;
-    setData((prev) => prev.filter((item) => item.id !== row.id));
+
+    setActionLoading(true);
+    try {
+      const result = await deleteProgram(String(row.id));
+
+      if (result.success) {
+        await fetchData();
+      } else {
+        alert(result.message ?? 'Failed to delete program.');
+      }
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
     <main className=" flex flex-col flex-1 h-full p-5">
-        <div className='flex flex-row justify-between items-center text-black mb-5'>
-          <h1>Program List</h1>
-        </div>
-        <TableLayout<AdminProgram> title='Programs' buttonTitle='+'  data={Data} onClick={() => { setEditData(null); setShowModal(true); }}>
-          {(pagedData) => (
-            <ReusableTable
-              data={pagedData} 
-              isLoading={isLoading}
-              columns={['name', 'required_hours', 'Total_Interns', 'Total_Coordinator']}
-              showActions
-              actions={[
-                { label: 'Edit', onClick: (row) => handleEdit(row) },
-                { label: 'Delete', onClick: (row) => handleDelete(row) },
-              ]}
-            />
-          )}
-        </TableLayout>
-        {showModal && (
-          <AddNewProgram
-            key={editData?.id ?? 'new'}
-            show={showModal}
-            onSubmit={handleAdd}
-            editData={editData}
-            onClose={() => {
-              setShowModal(false);
-              setEditData(null);
-            }}
+      <div className='flex flex-row justify-between items-center text-black mb-5'>
+        <h1>Program List</h1>
+      </div>
+      <TableLayout<AdminProgram> title='Programs' buttonTitle='+' data={Data} onClick={() => { setEditData(null); setShowModal(true); }}>
+        {(pagedData) => (
+          <ReusableTable
+            data={pagedData}
+            isLoading={isLoading || actionLoading}
+            columns={['name', 'required_hours', 'Total_Interns', 'Total_Coordinator']}
+            showActions
+            actions={[
+              { label: 'Edit', onClick: (row) => handleEditClick(row) },
+              { label: 'Delete', onClick: (row) => handleDelete(row) },
+            ]}
           />
         )}
+      </TableLayout>
+      {showModal && (
+        <AddNewProgram
+          key={editData?.id ?? 'new'}
+          show={showModal}
+          onSubmit={editData ? handleEdit : handleAdd}
+          editData={editData}
+          onClose={() => {
+            setShowModal(false);
+            setEditData(null);
+          }}
+        />
+      )}
     </main>
   );
 }

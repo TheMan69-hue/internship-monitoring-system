@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { TextAlignJustify, LogOut, User } from 'lucide-react';
 import Sidebar from '@/components/sidebar/sidebar';
+import { createClient } from '@/lib/supabase/client';
 
 export default function AdminLayout({
   children,
@@ -12,8 +14,37 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
-  // Close dropdown on outside click
+  const [userName, setUserName] = useState('Admin');
+  const [userEmail, setUserEmail] = useState('admin@example.com');
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const supabase = createClient();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      setUserEmail(user.email ?? 'admin@example.com');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profile?.full_name) {
+        setUserName(profile.full_name);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
@@ -24,10 +55,10 @@ export default function AdminLayout({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    // Add your logout logic here
-    console.log('Logout clicked');
-    // Example: router.push('/login') or call auth signOut
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
   };
 
   return (
@@ -41,39 +72,42 @@ export default function AdminLayout({
             aria-expanded={sidebarOpen}
             aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
           >
-            <TextAlignJustify className='text-slate-400'/>
+            <TextAlignJustify className='text-slate-400' />
           </button>
 
-          <div className="relative" ref={profileRef}>
-            <button
-              type="button"
-              onClick={() => setProfileOpen(!profileOpen)}
-              className="flex items-center gap-2 rounded-lg hover:bg-gray-100 transition-colors"
-              aria-expanded={profileOpen}
-              aria-haspopup="true"
-            >
-              <span className="text-sm font-medium text-gray-900">Admin</span>
-              <User className="w-5 h-5 text-gray-600" />
-            </button>
+          <div className="flex items-center gap-3">
+            <div className="relative" ref={profileRef}>
+              <button
+                type="button"
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-2 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-expanded={profileOpen}
+                aria-haspopup="true"
+              >
+                <span className="text-sm font-medium text-gray-900">{userName}</span>
+                <User className="w-5 h-5 text-gray-600" />
+              </button>
 
-            {profileOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
-                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900">Admin User</p>
-                    <p className="text-xs text-gray-500">admin@example.com</p>
+              {profileOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">{userName}</p>
+                      <p className="text-xs text-gray-500">{userEmail}</p>
+                    </div>
                   </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-lg transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </button>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
           </div>
         </div>
       </header>

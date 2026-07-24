@@ -1,20 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Coordinator } from "@/lib/types";
 
-type CoordinatorRecord = {
-  id: string;
-  profile_id: string | null;
-  employee_number: string | null;
-  department: string | null;
-  created_at: string | null;
-};
-
-type ProfileRecord = {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-};
-
 export async function getCoordinators(): Promise<Coordinator[]> {
   const supabase = createClient();
 

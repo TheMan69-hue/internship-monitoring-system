@@ -43,9 +43,6 @@ export async function updateStudentWorkSchedule(
     )
     .select();
 
-  console.log("UPSERT RESULT:", data);
-  console.log("UPSERT ERROR:", error);
-
   if (error) {
     throw error;
   }
