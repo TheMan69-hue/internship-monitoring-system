@@ -132,7 +132,7 @@ export async function getAssignedStudents() {
       student_number,
       name,
 
-      program:programs(
+      program:programs!students_program_id_fkey(
         program_name
       ),
 

@@ -20,7 +20,13 @@ export default function HTEForm({
   onCancel,
 }: HTEFormProps) {
   const [form, setForm] = useState(initialData);
+  const [startTime, setStartTime] = useState(
+    initialData.workingHours?.split(" - ")[0] ?? "08:00"
+  );
 
+  const [endTime, setEndTime] = useState(
+    initialData.workingHours?.split(" - ")[1] ?? "17:00"
+  );
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -63,7 +69,7 @@ export default function HTEForm({
         <FormInput
           label="Contact Person"
           name="contactPerson"
-          value={form.contactPerson}
+          value={form.contactPerson ?? ""}
           onChange={handleInputChange}
         />
 
@@ -71,14 +77,14 @@ export default function HTEForm({
           label="Email"
           type="email"
           name="email"
-          value={form.email}
+          value={form.email ?? ""}
           onChange={handleInputChange}
         />
 
         <FormInput
           label="Contact Number"
           name="phone"
-          value={form.phone}
+          value={form.phone ?? ""}
           onChange={handleInputChange}
         />
 
@@ -97,7 +103,7 @@ export default function HTEForm({
         <FormSelect
           label="Work Schedule"
           name="workSchedule"
-          value={form.workSchedule}
+          value={form.workSchedule ?? ""}
           options={[
             "Monday - Friday",
             "Monday - Saturday",
@@ -106,12 +112,35 @@ export default function HTEForm({
           onChange={handleSelectChange}
         />
 
-        <FormInput
-          label="Working Hours"
-          name="workingHours"
-          value={form.workingHours}
-          onChange={handleInputChange}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <FormInput
+            label="Start Time"
+            type="time"
+            value={startTime}
+            onChange={(e) => {
+              setStartTime(e.target.value);
+
+              setForm({
+                ...form,
+                workingHours: `${e.target.value} - ${endTime}`,
+              });
+            }}
+          />
+
+          <FormInput
+            label="End Time"
+            type="time"
+            value={endTime}
+            onChange={(e) => {
+              setEndTime(e.target.value);
+
+              setForm({
+                ...form,
+                workingHours: `${startTime} - ${e.target.value}`,
+              });
+            }}
+          />
+        </div>
 
       </div>
 
@@ -125,7 +154,28 @@ export default function HTEForm({
         </button>
 
         <button
-          onClick={() => onSave(form)}
+          onClick={async () => {
+            try {
+              const response = await fetch("/api/hte", {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(form),
+              });
+
+              if (!response.ok) {
+                throw new Error("Failed to update HTE");
+              }
+
+              onSave(form);
+
+              window.location.reload();
+            } catch (error) {
+              console.error(error);
+              alert("Failed to update HTE.");
+            }
+          }}
           className="rounded-[10px] bg-[#2563EB] px-5 py-2 text-white hover:bg-[#1D4ED8]"
         >
           Save Changes

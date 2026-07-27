@@ -1,5 +1,5 @@
 "use client";
-
+import { formatWorkingHours } from "@/lib/utils/time";
 import type { HTE } from "@/lib/types";
 import Modal from "./Modal";
 
@@ -90,7 +90,7 @@ export default function HTEDetailsModal({
             Working Hours
           </p>
           <p className="mt-1 text-base font-medium text-[#111827]">
-            {hte.workingHours}
+            {formatWorkingHours(hte.workingHours)}
           </p>
         </div>
 
@@ -107,6 +107,30 @@ export default function HTEDetailsModal({
         </button>
 
         <button
+          onClick={async () => {
+            try {
+              const response = await fetch("/api/hte", {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  id: hte.id,
+                }),
+              });
+
+              if (!response.ok) {
+                throw new Error("Failed to delete HTE");
+              }
+
+              onClose();
+
+              window.location.reload();
+            } catch (error) {
+              console.error(error);
+              alert("Failed to delete HTE.");
+            }
+          }}
           className="rounded-[10px] bg-[#DC2626] px-5 py-2 text-white transition hover:bg-[#B91C1C]"
         >
           Delete

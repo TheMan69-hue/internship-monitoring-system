@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import { formatTime12Hour } from "@/lib/utils/time";
 import type { Student } from "@/lib/types";
 import Modal from "./Modal";
 import EditWorkScheduleModal from "./EditWorkScheduleModal";
@@ -150,7 +150,7 @@ export default function StudentDetailsModal({
             </p>
 
             <p className="mt-1 text-base font-medium text-[#111827]">
-              {student.schedule?.expectedTimeIn ?? "Not Configured"}
+              {formatTime12Hour(student.schedule?.expectedTimeIn)}
             </p>
           </div>
 
@@ -160,7 +160,7 @@ export default function StudentDetailsModal({
             </p>
 
             <p className="mt-1 text-base font-medium text-[#111827]">
-              {student.schedule?.expectedTimeOut ?? "Not Configured"}
+              {formatTime12Hour(student.schedule?.expectedTimeOut)}
             </p>
           </div>
 
