@@ -54,6 +54,7 @@ export default function AttendanceCalendar({
   studentId,
   userId,
   clockNow = new Date(),
+  activeSemester = null,
   onMonthChange,
   onRecordsLoaded,
 }) {
@@ -73,7 +74,20 @@ export default function AttendanceCalendar({
       setIsLoading(true)
       setFetchError(null)
 
-      const { startDateStr, endDateStr } = getGridBounds(viewDate)
+      const { startDateStr: gridStartStr, endDateStr: gridEndStr } = getGridBounds(viewDate)
+
+      // Clamp the lower query bound to the semester start so records before the semester
+      // are never loaded into the map — disabled tiles must stay empty.
+      const effectiveStartStr =
+        activeSemester?.startDate && activeSemester.startDate > gridStartStr
+          ? activeSemester.startDate
+          : gridStartStr
+
+      // Clamp the upper query bound to the semester end similarly.
+      const effectiveEndStr =
+        activeSemester?.endDate && activeSemester.endDate < gridEndStr
+          ? activeSemester.endDate
+          : gridEndStr
 
       try {
         let queryStudentId = activeStudentId
@@ -94,8 +108,8 @@ export default function AttendanceCalendar({
         let query = supabase
           .from('attendance_logs')
           .select('id, student_id, date, status, time_in, time_out, location_name_in, location')
-          .gte('date', startDateStr)
-          .lte('date', endDateStr)
+          .gte('date', effectiveStartStr)
+          .lte('date', effectiveEndStr)
 
         if (queryStudentId) {
           query = query.eq('student_id', queryStudentId)
@@ -139,7 +153,7 @@ export default function AttendanceCalendar({
     return () => {
       isMounted = false
     }
-  }, [viewDate, activeStudentId, userId])
+  }, [viewDate, activeStudentId, userId, activeSemester])
 
   const attendanceStatusMap = useMemo(() => {
     const map = {}
@@ -150,8 +164,8 @@ export default function AttendanceCalendar({
   }, [monthlyRecords])
 
   const calendar = useMemo(
-    () => generateCalendar(studentProfile, viewDate, attendanceStatusMap, clockNow),
-    [studentProfile, viewDate, attendanceStatusMap, clockNow],
+    () => generateCalendar(studentProfile, viewDate, attendanceStatusMap, clockNow, activeSemester),
+    [studentProfile, viewDate, attendanceStatusMap, clockNow, activeSemester],
   )
 
   const isCurrentMonthView =
@@ -242,12 +256,16 @@ export default function AttendanceCalendar({
                 className={`calendar-tile calendar-tile--${tile.status}${
                   tile.isCurrentDay ? ' calendar-tile--current' : ''
                 }${hasRecord ? ' calendar-tile--has-record' : ''}${isSelected ? ' calendar-tile--selected' : ''}`}
-                onClick={() => setSelectedDate(isSelected ? null : tile.isoDate)}
-                aria-expanded={hasRecord ? isSelected : undefined}
+                onClick={tile.isDisabled ? undefined : () => setSelectedDate(isSelected ? null : tile.isoDate)}
+                disabled={tile.isDisabled}
+                aria-disabled={tile.isDisabled || undefined}
+                aria-expanded={hasRecord && !tile.isDisabled ? isSelected : undefined}
                 aria-label={
-                  hasRecord
-                    ? `Attendance record for ${tile.isoDate}: ${record.status}`
-                    : `${tile.isoDate}: ${tile.status}`
+                  tile.isDisabled
+                    ? `${tile.isoDate}: outside semester`
+                    : hasRecord
+                      ? `Attendance record for ${tile.isoDate}: ${record.status}`
+                      : `${tile.isoDate}: ${tile.status}`
                 }
               >
                 <span className="calendar-number">{tile.dayNumber}</span>

@@ -16,7 +16,7 @@ function getDaysInMonth(year, monthIndex) {
   return new Date(year, monthIndex + 1, 0).getDate()
 }
 
-export function generateCalendar(studentProfile, referenceDate = new Date(), customAttendance = null, clockNow = new Date()) {
+export function generateCalendar(studentProfile, referenceDate = new Date(), customAttendance = null, clockNow = new Date(), activeSemester = null) {
   const year = referenceDate.getFullYear()
   const monthIndex = referenceDate.getMonth()
   const daysInMonth = getDaysInMonth(year, monthIndex)
@@ -27,6 +27,10 @@ export function generateCalendar(studentProfile, referenceDate = new Date(), cus
   const attendance = customAttendance ?? studentProfile?.schedule?.attendance ?? {}
   const daysOff = studentProfile?.schedule?.daysOff ?? []
   const weeks = []
+
+  // Resolve semester boundaries (inclusive) into midnight Date objects for comparison
+  const semesterStart = activeSemester?.startDate ? new Date(activeSemester.startDate + 'T00:00:00') : null
+  const semesterEnd = activeSemester?.endDate ? new Date(activeSemester.endDate + 'T00:00:00') : null
 
   // Create start-of-day comparison for past/future check relative to clockNow
   const todayStart = new Date(clockNow.getFullYear(), clockNow.getMonth(), clockNow.getDate())
@@ -45,19 +49,26 @@ export function generateCalendar(studentProfile, referenceDate = new Date(), cus
       const dayOfWeek = currentDate.getDay()
       const isCurrentDay = isoDate === todayIsoDate
 
+      // Days outside the active semester boundary are marked disabled —
+      // they are not counted as absent and cannot have records.
+      const isBeforeSemester = semesterStart && currentDate < semesterStart
+      const isAfterSemester = semesterEnd && currentDate > semesterEnd
+      const isOutsideSemester = isWithinMonth && (isBeforeSemester || isAfterSemester)
+
       let status = 'present'
 
-      if (attendanceStatus) {
+      if (!isWithinMonth) {
+        // Days spilling into adjacent months are always 'outside' (or 'recorded-outside' if they have a record).
+        status = attendanceStatus ? 'recorded-outside' : 'outside'
+      } else if (isOutsideSemester) {
+        // Semester boundary takes absolute priority — never count these as absent, recorded, or current
+        // even if a stale DB record happens to exist for this date.
+        status = 'disabled'
+      } else if (attendanceStatus) {
         // Database statuses are stored as text; normalize them before using
         // them as CSS modifier names (for example, INCOMPLETE -> incomplete).
         const normalizedStatus = String(attendanceStatus).toLowerCase()
-        status = !isWithinMonth
-          ? 'recorded-outside'
-          : normalizedStatus === 'present'
-            ? 'recorded'
-            : normalizedStatus
-      } else if (!isWithinMonth) {
-        status = 'outside'
+        status = normalizedStatus === 'present' ? 'recorded' : normalizedStatus
       } else if (isCurrentDay) {
         status = 'current'
       } else if (daysOff.includes(dayOfWeek)) {
@@ -71,6 +82,7 @@ export function generateCalendar(studentProfile, referenceDate = new Date(), cus
         isoDate,
         isCurrentDay,
         status,
+        isDisabled: isOutsideSemester,
       })
     }
 

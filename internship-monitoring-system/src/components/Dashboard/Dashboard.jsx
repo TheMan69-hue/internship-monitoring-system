@@ -94,7 +94,7 @@ function getRenderedDuration(record) {
   return Math.max(0, new Date(record.time_out).getTime() - new Date(record.time_in).getTime())
 }
 
-function Dashboard({ onOpenProfile, studentProfile, userId }) {
+function Dashboard({ onOpenProfile, studentProfile, userId, activeSemester }) {
   const [clockNow, setClockNow] = useState(new Date())
   const [liveLocation, setLiveLocation] = useState('')
   const [gpsPermissionState, setGpsPermissionState] = useState('prompt')
@@ -240,6 +240,7 @@ function Dashboard({ onOpenProfile, studentProfile, userId }) {
           studentId={studentProfile?.id}
           userId={userId}
           clockNow={clockNow}
+          activeSemester={activeSemester}
         />
 
         <section className="hours-progress" aria-label="Internship hours progress">
@@ -257,7 +258,7 @@ function Dashboard({ onOpenProfile, studentProfile, userId }) {
         </section>
       </section>
 
-      <AttendanceTracker clockNow={clockNow} gpsPermissionState={gpsPermissionState} userId={userId} />
+      <AttendanceTracker clockNow={clockNow} gpsPermissionState={gpsPermissionState} userId={userId} activeSemester={activeSemester} />
     </main>
   )
 }

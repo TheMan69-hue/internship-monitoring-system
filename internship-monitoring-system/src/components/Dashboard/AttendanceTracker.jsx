@@ -38,13 +38,21 @@ function readStoredAttendance(storageKey) {
   }
 }
 
-function AttendanceTracker({ clockNow, gpsPermissionState, userId }) {
+function AttendanceTracker({ clockNow, gpsPermissionState, userId, activeSemester = null }) {
   const [storageKey] = useState(() => `attendance-state-${userId}-${new Date().toISOString().slice(0, 10)}`)
   const [attendanceState, setAttendanceState] = useState(() => readStoredAttendance(storageKey))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [attendanceMessage, setAttendanceMessage] = useState('')
   const [isGpsBlockedByAction, setIsGpsBlockedByAction] = useState(false)
   const isGpsBlocked = gpsPermissionState === 'denied' || isGpsBlockedByAction
+
+  // Semester boundary checks — lock attendance recording outside the active semester
+  const semesterStart = activeSemester?.startDate ? new Date(activeSemester.startDate + 'T00:00:00') : null
+  const semesterEnd = activeSemester?.endDate ? new Date(activeSemester.endDate + 'T23:59:59') : null
+  const todayStart = new Date(clockNow.getFullYear(), clockNow.getMonth(), clockNow.getDate())
+  const isBeforeSemester = semesterStart !== null && todayStart < semesterStart
+  const isAfterSemester = semesterEnd !== null && todayStart > semesterEnd
+  const isOutsideSemester = isBeforeSemester || isAfterSemester
 
   const isTimedIn = Boolean(attendanceState.timeInAt)
   const timeInAt = attendanceState.timeInAt ? new Date(attendanceState.timeInAt) : null
@@ -93,7 +101,7 @@ if (isTimedIn && timeOutAvailableAt) {
 }
 
   const isTimeOutLocked = isTimedIn && timeOutAvailableAt && (timeOutAvailableAt.getTime() - clockNow.getTime() > 0);
-  const isButtonDisabled = isSubmitting || (!isTimedIn && isGpsBlocked) || (isTimedIn && isTimeOutLocked)
+  const isButtonDisabled = isSubmitting || isOutsideSemester || (!isTimedIn && isGpsBlocked) || (isTimedIn && isTimeOutLocked)
 
   const handleTimeAction = async () => {
     const action = isTimedIn ? 'Time-out' : 'Time-in'
@@ -169,7 +177,18 @@ if (isTimedIn && timeOutAvailableAt) {
           {isSubmitting ? 'Saving...' : elapsedTime}
         </span>
       </button>
-      {!isTimedIn && isGpsBlocked ? (
+      {isOutsideSemester && isBeforeSemester && activeSemester?.startDate ? (
+        <p className="attendance-message" role="status">
+          Attendance tracking starts on{' '}
+          {new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(semesterStart)}.
+        </p>
+      ) : isOutsideSemester && isAfterSemester && activeSemester?.endDate ? (
+        <p className="attendance-message" role="status">
+          Semester ended on{' '}
+          {new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(semesterEnd)}.
+        </p>
+      ) : null}
+      {!isOutsideSemester && !isTimedIn && isGpsBlocked ? (
         <p className="attendance-message" role="status">
           Allow GPS access to enable time in.
         </p>

@@ -101,6 +101,7 @@ function App() {
   const [authNotice, setAuthNotice] = useState('')
   const [requiresProfileCompletion, setRequiresProfileCompletion] = useState(false)
   const isProvisioningProfileRef = useRef(false)
+  const [activeSemester, setActiveSemester] = useState(null)
 
   function applyStudentProfile(data) {
     setProfile((previousProfile) => ({
@@ -151,6 +152,51 @@ function App() {
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
+
+  // Fetch the active semester to constrain calendar and attendance recording.
+  // Depends on [session] so it runs as an authenticated user and satisfies any
+  // RLS policy on the semesters table. Also re-fetches if the session changes.
+  useEffect(() => {
+    let isMounted = true
+
+    if (!session) {
+      setActiveSemester(null)
+      return
+    }
+
+    async function loadActiveSemester() {
+      const { data, error } = await supabase
+        .from('semesters')
+        .select('id, name, start_date, end_date, is_active')
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (!isMounted) return
+
+      if (error) {
+        console.warn('Unable to load active semester:', error.message)
+        return
+      }
+
+      if (data) {
+        setActiveSemester({
+          id: data.id,
+          name: data.name,
+          startDate: data.start_date,
+          endDate: data.end_date,
+          isActive: data.is_active,
+        })
+      } else {
+        console.info('No active semester found (is_active = true).')
+      }
+    }
+
+    loadActiveSemester()
+
+    return () => {
+      isMounted = false
+    }
+  }, [session])
 
   useEffect(() => {
     let isMounted = true
@@ -571,8 +617,8 @@ function App() {
         onGoogleSignIn={handleGoogleSignIn}
         onForgotPassword={handleForgotPassword}
         onCompleteProfile={handleCompleteProfile}
-        onSwitchToSignIn={() => {}}
-        onSwitchToSignUp={() => {}}
+        onSwitchToSignIn={() => { }}
+        onSwitchToSignUp={() => { }}
         isBusy={isAuthBusy}
       />
     )
@@ -599,7 +645,7 @@ function App() {
     )
   }
 
-  return <Dashboard onOpenProfile={openProfile} studentProfile={profile} userId={session.user.id} />
+  return <Dashboard onOpenProfile={openProfile} studentProfile={profile} userId={session.user.id} activeSemester={activeSemester} />
 }
 
 export default App
