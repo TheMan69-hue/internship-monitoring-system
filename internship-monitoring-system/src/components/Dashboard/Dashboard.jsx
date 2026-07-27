@@ -3,11 +3,9 @@ import './Dashboard.css'
 import { generateCalendar } from '../../utils/generateCalendar'
 import { getCurrentLocation, reverseGeocodeLocation } from '../../utils/geolocation'
 import AttendanceTracker from './AttendanceTracker'
+import AttendanceCalendar from './AttendanceCalendar'
 
 const getReadableAddress = (locationData) => {
-  if (!locationData) return '';
-
-  // Case A: If it's a raw full-address text string
   if (typeof locationData === 'string') {
     const parts = locationData.split(',').map(p => p.trim());
     const uniqueParts = [];
@@ -229,7 +227,6 @@ function Dashboard({ onOpenProfile, studentProfile, userId }) {
               }
             </span>
           </div>
-
           <div className="timestamp" aria-label={`Server synchronized time ${displayTime}, ${displayDate}`}>
             <strong>{displayTime}</strong>
             <span>{displayDate}</span>
@@ -238,47 +235,12 @@ function Dashboard({ onOpenProfile, studentProfile, userId }) {
       </header>
 
       <section className="tracker-card" aria-label="Daily time record tracker">
-        <h1>{calendar.monthLabel}</h1>
-
-        <div className="weekday-row" aria-hidden="true">
-          {calendar.weekdayLabels.map((weekday) => (
-            <span key={weekday} className="weekday-pill">
-              {weekday}
-            </span>
-          ))}
-        </div>
-
-        <div className="calendar-grid">
-          {calendar.weeks.flatMap((week, weekIndex) =>
-            week.map((tile) => {
-              const record = studentProfile?.schedule?.records?.[tile.isoDate]
-              const hasRecord = Boolean(record)
-              const isSelected = selectedDate === tile.isoDate
-              const renderedDuration = getRenderedDuration(record)
-
-              return (
-              <button
-                type="button"
-                key={`${weekIndex}-${tile.isoDate}`}
-                className={`calendar-tile calendar-tile--${tile.status}${tile.isCurrentDay ? ' calendar-tile--current' : ''}${hasRecord ? ' calendar-tile--has-record' : ''}${isSelected ? ' calendar-tile--selected' : ''}`}
-                onClick={() => setSelectedDate(isSelected ? null : tile.isoDate)}
-                aria-expanded={hasRecord ? isSelected : undefined}
-                aria-label={hasRecord ? `Show attendance record for ${tile.isoDate}` : `${tile.isoDate}: ${tile.status}`}
-              >
-                <span className="calendar-number">{tile.dayNumber}</span>
-                {hasRecord ? (
-                  <span className="calendar-record" aria-hidden={!isSelected}>
-                    <span><b>Time in</b>{formatTime(record.time_in)}</span>
-                    <span><b>Time out</b>{formatTime(record.time_out)}</span>
-                    <span><b>Status</b>{record.status}</span>
-                    <span><b>Rendered</b>{record.time_out ? formatDuration(renderedDuration) : 'In progress'}</span>
-                  </span>
-                ) : null}
-              </button>
-              )
-            }),
-          )}
-        </div>
+        <AttendanceCalendar
+          studentProfile={studentProfile}
+          studentId={studentProfile?.id}
+          userId={userId}
+          clockNow={clockNow}
+        />
 
         <section className="hours-progress" aria-label="Internship hours progress">
           <div className="hours-progress__heading">

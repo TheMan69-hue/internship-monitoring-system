@@ -105,6 +105,7 @@ function App() {
   function applyStudentProfile(data) {
     setProfile((previousProfile) => ({
       ...previousProfile,
+      id: data.id,
       name: data.name,
       role: previousProfile.role || 'Intern',
       studentNumber: data.student_number,

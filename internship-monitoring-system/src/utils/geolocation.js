@@ -142,11 +142,6 @@ export async function reverseGeocodeLocation({ latitude, longitude }) {
     console.warn("Overpass validation bypassed, falling back to base metrics...", error);
   }
 
-  // Fallback if no specific campus building node was captured
-  if (!landmarkName) {
-    landmarkName = "Cavite State University Main Campus";
-  }
-
   // 3. Reconstruct the macro address framework completely clean
   // We DELIBERATELY skip minor noise keys like: address.amenity, address.bank, address.atm, address.courtyard
   const macroFramework = [
@@ -172,6 +167,12 @@ export async function reverseGeocodeLocation({ latitude, longitude }) {
     if (!isDuplicate) uniqueFramework.push(part);
   });
 
-  // Combine our targeted building landmark with the clean macro layout array
-  return [landmarkName, ...uniqueFramework].join(', ');
+  // Combine only real location data. Never substitute an unrelated landmark.
+  const locationParts = [landmarkName, ...uniqueFramework].filter(Boolean);
+
+  if (locationParts.length === 0) {
+    throw new Error('No readable address was returned for the current coordinates.');
+  }
+
+  return locationParts.join(', ');
 }
