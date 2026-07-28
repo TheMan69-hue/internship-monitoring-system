@@ -26,10 +26,12 @@ type DbStudent = {
   } | null;
 };
 
-export async function getAllStudents(): Promise<Student[]> {
+export async function getAllStudents(
+  _filters?: { year?: string; semester?: string }
+): Promise<Student[]> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("students")
     .select(`
       id,
@@ -54,8 +56,19 @@ export async function getAllStudents(): Promise<Student[]> {
         required_hours,
         grace_minutes
       )
-    `)
-    .order("name", { ascending: true });
+    `);
+
+  // Apply Supabase-side filters when provided
+  // NOTE: students table doesn't have school_year_id/semester_id columns yet.
+  // Uncomment these once those columns exist:
+  // if (filters?.year) {
+  //   query = query.eq("school_year_id", filters.year);
+  // }
+  // if (filters?.semester) {
+  //   query = query.eq("semester_id", filters.semester);
+  // }
+
+  query = query.order("name", { ascending: true });
 
   if (error) {
     throw error;

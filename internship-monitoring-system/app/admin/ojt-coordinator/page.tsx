@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Coordinator } from '@/lib/types';
+import YearFilter from '@/components/table/YearFilter';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
 import AddNewCoordinator from '@/components/modals/AddNewCoordinator';
 import { getCoordinators, getSectionOptions } from '@/lib/services/admin/coordinators';
+import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
 import {
   createCoordinator,
   updateCoordinator,
@@ -20,11 +22,20 @@ export default function Dashboard() {
   const [editData, setEditData] = useState<Coordinator | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchData = async () => {
+  // ── Academic Year / Semester Filter State ──
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedSemester, setSelectedSemester] = useState<string>('');
+  const [currentActiveYear, setCurrentActiveYear] = useState<string>('');
+  const [yearOptions, setYearOptions] = useState<{ value: string; label: string }[]>([]);
+  const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
+  const [semesterDisabled, setSemesterDisabled] = useState(true);
+
+  const fetchData = async (year?: string, semester?: string) => {
     setIsLoading(true);
     try {
+      const filters = year ? { year, semester } : undefined;
       const [coordinators, sections] = await Promise.all([
-        getCoordinators(),
+        getCoordinators(filters),
         getSectionOptions(),
       ]);
       setData(coordinators);
@@ -40,12 +51,15 @@ export default function Dashboard() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [coordinators, sections] = await Promise.all([
+        const [coordinators, sections, academicData] = await Promise.all([
           getCoordinators(),
           getSectionOptions(),
+          getAcademicPageData(),
         ]);
         setData(coordinators);
         setSectionOptions(sections);
+        setCurrentActiveYear(academicData.activeSchoolYear?.academicYear ?? '');
+        setYearOptions(academicData.yearOptions);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -54,6 +68,29 @@ export default function Dashboard() {
     };
     load();
   }, []);
+
+  const handleYearChange = async (year: string) => {
+    setSelectedYear(year);
+    setSelectedSemester('');
+    setSemesterDisabled(true);
+    if (year) {
+      try {
+        const semesters = await getSemestersBySchoolYear(year);
+        setSemesterOptions(semesters);
+        setSemesterDisabled(false);
+      } catch (error) {
+        console.error('Error fetching semesters:', error);
+        setSemesterOptions([]);
+      }
+    } else {
+      setSemesterOptions([]);
+    }
+  };
+
+  const handleLoad = async (year: string, semester: string) => {
+    if (!year || !semester) return;
+    await fetchData(year, semester);
+  };
 
   const handleAdd = async (newData: Omit<Coordinator, 'id' | 'password'> & { id?: string; sections?: string[]; password?: string }) => {
     setActionLoading(true);
@@ -131,6 +168,21 @@ export default function Dashboard() {
     <main className=" flex flex-col flex-1 h-full p-5">
       <div className='flex flex-row justify-between items-center text-black mb-5'>
         <h1>OJT Coordinator List</h1>
+        <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
+      </div>
+      <div>
+        <YearFilter
+          yearLabel="Academic Year"
+          yearOptions={yearOptions}
+          yearValue={selectedYear}
+          onYearChange={handleYearChange}
+          semesterLabel="Semester"
+          semesterOptions={semesterOptions}
+          semesterValue={selectedSemester}
+          onSemesterChange={setSelectedSemester}
+          onLoad={handleLoad}
+          semesterDisabled={semesterDisabled}
+        />
       </div>
       <TableLayout<Coordinator> title='Coordinator List' buttonTitle='+' data={Data} onClick={() => { setEditData(null); setShowModal(true); }}>
         {(pagedData) => (

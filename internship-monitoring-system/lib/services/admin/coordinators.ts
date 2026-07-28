@@ -1,13 +1,27 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Coordinator } from "@/lib/types";
 
-export async function getCoordinators(): Promise<Coordinator[]> {
+export async function getCoordinators(
+  _filters?: { year?: string; semester?: string }
+): Promise<Coordinator[]> {
   const supabase = createClient();
 
-  const { data: coordinatorsData, error: coordinatorsError } = await supabase
+  let query = supabase
     .from("coordinators")
-    .select("id, profile_id, employee_number, department, created_at")
-    .order("created_at", { ascending: true });
+    .select("id, profile_id, employee_number, department, created_at");
+
+  // NOTE: coordinators table doesn't have school_year_id/semester_id columns yet.
+  // Uncomment these once those columns exist:
+  // if (filters?.year) {
+  //   query = query.eq("school_year_id", filters.year);
+  // }
+  // if (filters?.semester) {
+  //   query = query.eq("semester_id", filters.semester);
+  // }
+
+  query = query.order("created_at", { ascending: true });
+
+  const { data: coordinatorsData, error: coordinatorsError } = await query;
 
   if (coordinatorsError) {
     throw coordinatorsError;

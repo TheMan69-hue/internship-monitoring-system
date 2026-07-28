@@ -15,10 +15,12 @@ type DbRegistration = {
   sections: { section_name: string } | null;
 };
 
-export async function getAdminRegistrations(): Promise<Intern[]> {
+export async function getAdminRegistrations(
+  _filters?: { year?: string; semester?: string }
+): Promise<Intern[]> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("student_registrations")
     .select(`
       id,
@@ -32,8 +34,19 @@ export async function getAdminRegistrations(): Promise<Intern[]> {
       created_at,
       programs:programs(program_name),
       sections:sections(section_name)
-    `)
-    .order("created_at", { ascending: false });
+    `);
+
+  // Apply Supabase-side filters when provided
+  // NOTE: student_registrations doesn't have school_year_id/semester_id columns yet.
+  // Uncomment these once those columns exist:
+  // if (filters?.year) {
+  //   query = query.eq("school_year_id", filters.year);
+  // }
+  // if (filters?.semester) {
+  //   query = query.eq("semester_id", filters.semester);
+  // }
+
+  query = query.order("created_at", { ascending: false });
 
   if (error) {
     throw error;

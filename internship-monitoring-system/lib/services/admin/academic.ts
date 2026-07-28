@@ -35,11 +35,11 @@ export type AcademicPageData = {
   activeSchoolYear: SchoolYear | null;
 };
 
-function normalizeSemesterName(value: string | null | undefined): SchoolYear["semester"] {
+export function normalizeSemesterName(value: string | null | undefined): SchoolYear["semester"] {
   const normalized = (value ?? "").toLowerCase();
 
-  if (normalized.includes("summer")) {
-    return "summer";
+  if (normalized.includes("midyear") || normalized === "summer") {
+    return "midyear";
   }
 
   if (normalized.includes("second") || normalized.includes("2nd")) {
@@ -72,6 +72,35 @@ async function getCurrentAdminProfile() {
   }
 
   return profile.role;
+}
+
+/**
+ * Fetches semesters that belong to a specific school year.
+ * Used by the YearFilter component to populate the semester dropdown
+ * when a user selects an academic year.
+ *
+ * @param schoolYearName - The display name of the school year (e.g. "2025-2026")
+ * @returns Array of { value: semesterId, label: semesterName } for dropdown use
+ */
+export async function getSemestersBySchoolYear(
+  schoolYearId: string
+): Promise<AcademicSemesterOption[]> {
+  const supabase = createClient();
+
+  const { data: semesters, error: semestersError } = await supabase
+    .from("semesters")
+    .select("id, name")
+    .eq("school_year_id", schoolYearId)
+    .order("start_date", { ascending: true });
+
+  if (semestersError) {
+    throw semestersError;
+  }
+
+  return (semesters ?? []).map((sem) => ({
+    value: sem.id,
+    label: sem.name ?? "Unnamed Semester",
+  }));
 }
 
 export async function getAcademicPageData(): Promise<AcademicPageData> {
@@ -118,6 +147,7 @@ export async function getAcademicPageData(): Promise<AcademicPageData> {
 
     return {
       id: semester.id ?? "",
+      schoolYearId: parentSchoolYear?.id ?? "",
       academicYear: parentSchoolYear?.name ?? "Unknown School Year",
       semester: normalizeSemesterName(semester.name),
       is_active: Boolean(semester.is_active),
@@ -128,7 +158,7 @@ export async function getAcademicPageData(): Promise<AcademicPageData> {
   });
 
   const yearOptions: AcademicYearOption[] = schoolYears.map((year) => ({
-    value: year.name ?? year.id,
+    value: year.id,
     label: year.name ?? "Unnamed School Year",
   }));
 
@@ -137,11 +167,13 @@ export async function getAcademicPageData(): Promise<AcademicPageData> {
     label: semester.name ?? "Unnamed Semester",
   }));
 
-  const activeSchoolYear: SchoolYear | null = schoolYears.find((year) => year.is_active)
+  const activeSemester = semesters.find((sem) => sem.is_active);
+  const activeSchoolYear: SchoolYear | null = activeSemester
     ? {
-        id: schoolYears.find((year) => year.is_active)?.id ?? "",
-        academicYear: schoolYears.find((year) => year.is_active)?.name ?? "",
-        semester: "1st",
+        id: activeSemester.id,
+        schoolYearId: activeSemester.school_year_id ?? "",
+        academicYear: schoolYearMap.get(activeSemester.school_year_id ?? "")?.name ?? "",
+        semester: normalizeSemesterName(activeSemester.name),
         is_active: true,
         status: "active",
       }

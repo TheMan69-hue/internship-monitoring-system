@@ -3,7 +3,7 @@ import { ReactNode } from 'react';
 interface ButtonProps {
   icon?: ReactNode;
   children: ReactNode;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline';
   size?: 'sm' | 'md' | 'lg';

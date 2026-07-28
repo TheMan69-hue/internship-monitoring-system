@@ -25,13 +25,14 @@ export async function createProgram(data: {
 
     return { success: true, data: program };
   } catch (error) {
-    return {
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to create program.",
-    };
+    console.error("createProgram error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null
+          ? JSON.stringify(error)
+          : "Failed to create program.";
+    return { success: false, message };
   }
 }
 

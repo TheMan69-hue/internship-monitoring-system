@@ -6,7 +6,7 @@ import YearFilter from '@/components/table/YearFilter';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
 import { Intern } from '@/lib/types';
-import { getAcademicPageData } from '@/lib/services/admin/academic';
+import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
 import { getAdminRegistrations } from '@/lib/services/admin/registrations';
 
 export default function Dashboard() {
@@ -17,9 +17,14 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
+  // ── Academic Year / Semester Filter State ──
+  // Same pattern as the dashboard — year options load on mount,
+  // semester options are fetched on-demand when a year is selected.
   const [yearOptions, setYearOptions] = useState<{ value: string; label: string }[]>([]);
   const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
+  const [semesterDisabled, setSemesterDisabled] = useState(true);
 
+  // ── Initial Load: Fetch academic year options and all registrations ──
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -30,7 +35,6 @@ export default function Dashboard() {
         ]);
         setCurrentActiveYear(academicData.activeSchoolYear?.academicYear ?? '');
         setYearOptions(academicData.yearOptions);
-        setSemesterOptions(academicData.semesterOptions);
         setData(registrations);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -42,6 +46,42 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
+  // ── Year Change Handler ──
+  // When user picks a year, fetch its semesters and enable the semester dropdown.
+  const handleYearChange = async (year: string) => {
+    setSelectedYear(year);
+    setSelectedSemester('');
+    setSemesterDisabled(true);
+    if (year) {
+      try {
+        const semesters = await getSemestersBySchoolYear(year);
+        setSemesterOptions(semesters);
+        setSemesterDisabled(false);
+      } catch (error) {
+        console.error('Error fetching semesters:', error);
+        setSemesterOptions([]);
+      }
+    } else {
+      setSemesterOptions([]);
+    }
+  };
+
+  // ── Load Button Handler ──
+  // Re-fetches registration data filtered by the selected year+semester.
+  const handleLoad = async (year: string, semester: string) => {
+    if (!year || !semester) return;
+    setIsLoading(true);
+    try {
+      const filters = { year, semester };
+      const registrations = await getAdminRegistrations(filters);
+      setData(registrations);
+    } catch (error) {
+      console.error('Error loading filtered data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <main className=" flex flex-col flex-1 h-full p-5">
       <div className='flex flex-row justify-between items-center text-black'>
@@ -49,18 +89,22 @@ export default function Dashboard() {
         <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
       </div>
       <div>
+        {/* ── Academic Year / Semester Filter ──
+            Year populated on load, semester on year-select, button applies filter. */}
         <YearFilter
           yearLabel="Academic Year"
           yearOptions={yearOptions}
           yearValue={selectedYear}
-          onYearChange={setSelectedYear}
+          onYearChange={handleYearChange}
           semesterLabel="Semester"
           semesterOptions={semesterOptions}
           semesterValue={selectedSemester}
           onSemesterChange={setSelectedSemester}
+          onLoad={handleLoad}
+          semesterDisabled={semesterDisabled}
         />
       </div>
-      <TableLayout<Intern> title='Student List' buttonTitle='' data={Data} onClick={() => {}}>
+      <TableLayout<Intern> title='Student List' buttonTitle='+' data={Data} onClick={() => {}}>
         {(pagedData) => (
           <ReusableTable
             data={pagedData}

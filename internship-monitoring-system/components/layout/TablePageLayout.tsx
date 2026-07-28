@@ -11,7 +11,7 @@ type TablelayoutProps<T> = {
   data: T[];
   entriesPerPage?: number;
   children: (pagedData: T[]) => ReactNode;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 export default function TableLayout<T>({

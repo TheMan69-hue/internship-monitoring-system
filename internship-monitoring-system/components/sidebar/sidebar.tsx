@@ -25,7 +25,7 @@ const adminRoutes: AdminRoute[] = [
   {
     label: 'Registration', icon: <UserPlus/>,
     children: [
-      { label: 'Archive List', href: '/admin/registration/archive-list', icon: <FileUser/> },
+      { label: 'Academic Records', href: '/admin/registration/archive-list', icon: <FileUser/> },
       { label: 'Registration List', href: '/admin/registration/registration-list', icon: <FileUser/> },
     ],
   },

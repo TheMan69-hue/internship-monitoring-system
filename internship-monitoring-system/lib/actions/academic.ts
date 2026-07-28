@@ -102,20 +102,31 @@ export async function setActiveSchoolYear(schoolYearId: string) {
   try {
     const supabase = await createClient();
 
-    const { error: deactivateAll } = await supabase
+    // Deactivate ALL school years
+    const { error: deactivateAllYears } = await supabase
       .from("school_years")
       .update({ is_active: false })
       .neq("id", schoolYearId);
 
-    if (deactivateAll) throw deactivateAll;
+    if (deactivateAllYears) throw deactivateAllYears;
 
-    const { error: deactivateSemesters } = await supabase
+    // Deactivate ALL semesters across all school years
+    const { error: deactivateAllSemesters } = await supabase
       .from("semesters")
       .update({ is_active: false })
       .neq("school_year_id", schoolYearId);
 
-    if (deactivateSemesters) throw deactivateSemesters;
+    if (deactivateAllSemesters) throw deactivateAllSemesters;
 
+    // Also deactivate semesters under the target year before re-activating only the latest
+    const { error: deactivateTargetSemesters } = await supabase
+      .from("semesters")
+      .update({ is_active: false })
+      .eq("school_year_id", schoolYearId);
+
+    if (deactivateTargetSemesters) throw deactivateTargetSemesters;
+
+    // Activate the target school year
     const { error: activateTarget } = await supabase
       .from("school_years")
       .update({ is_active: true })
@@ -123,12 +134,25 @@ export async function setActiveSchoolYear(schoolYearId: string) {
 
     if (activateTarget) throw activateTarget;
 
-    const { error: activateSemesters } = await supabase
+    // Find and activate the latest semester (by start_date) under this school year
+    const { data: latestSemester, error: fetchSemError } = await supabase
       .from("semesters")
-      .update({ is_active: true })
-      .eq("school_year_id", schoolYearId);
+      .select("id")
+      .eq("school_year_id", schoolYearId)
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .single();
 
-    if (activateSemesters) throw activateSemesters;
+    if (fetchSemError) throw fetchSemError;
+
+    if (latestSemester) {
+      const { error: activateSemError } = await supabase
+        .from("semesters")
+        .update({ is_active: true })
+        .eq("id", latestSemester.id);
+
+      if (activateSemError) throw activateSemError;
+    }
 
     revalidatePath("/admin/registration/archive-list");
     revalidatePath("/admin/dashboard");
@@ -231,6 +255,148 @@ export async function deleteSemester(id: string) {
         error instanceof Error
           ? error.message
           : "Failed to delete semester.",
+    };
+  }
+}
+
+export async function setActiveSemester(semesterId: string) {
+  try {
+    const supabase = await createClient();
+
+    // Get the school year for this semester
+    const { data: semester, error: fetchError } = await supabase
+      .from("semesters")
+      .select("school_year_id")
+      .eq("id", semesterId)
+      .single();
+
+    if (fetchError || !semester) throw fetchError ?? new Error("Semester not found");
+
+    // Deactivate ALL semesters across all school years
+    const { error: deactivateAllSemesters } = await supabase
+      .from("semesters")
+      .update({ is_active: false })
+      .neq("id", semesterId);
+
+    if (deactivateAllSemesters) throw deactivateAllSemesters;
+
+    // Deactivate ALL school years
+    const { error: deactivateAllYears } = await supabase
+      .from("school_years")
+      .update({ is_active: false })
+      .neq("id", semester.school_year_id);
+
+    if (deactivateAllYears) throw deactivateAllYears;
+
+    // Activate the target semester
+    const { error: activateSemError } = await supabase
+      .from("semesters")
+      .update({ is_active: true })
+      .eq("id", semesterId);
+
+    if (activateSemError) throw activateSemError;
+
+    // Activate the parent school year
+    const { error: activateYearError } = await supabase
+      .from("school_years")
+      .update({ is_active: true })
+      .eq("id", semester.school_year_id);
+
+    if (activateYearError) throw activateYearError;
+
+    revalidatePath("/admin/registration/archive-list");
+    revalidatePath("/admin/registration/archive-list/semester-list");
+    revalidatePath("/admin/dashboard");
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to set active semester.",
+    };
+  }
+}
+
+export async function deactivateSchoolYear(schoolYearId: string) {
+  try {
+    const supabase = await createClient();
+
+    // Deactivate the school year
+    const { error: deactivateYearError } = await supabase
+      .from("school_years")
+      .update({ is_active: false })
+      .eq("id", schoolYearId);
+
+    if (deactivateYearError) throw deactivateYearError;
+
+    // Deactivate all semesters under this school year
+    const { error: deactivateSemestersError } = await supabase
+      .from("semesters")
+      .update({ is_active: false })
+      .eq("school_year_id", schoolYearId);
+
+    if (deactivateSemestersError) throw deactivateSemestersError;
+
+    revalidatePath("/admin/registration/archive-list");
+    revalidatePath("/admin/registration/archive-list/semester-list");
+    revalidatePath("/admin/dashboard");
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to deactivate school year.",
+    };
+  }
+}
+
+export async function deactivateSemester(semesterId: string) {
+  try {
+    const supabase = await createClient();
+
+    // Get the parent school year
+    const { data: semester, error: fetchError } = await supabase
+      .from("semesters")
+      .select("school_year_id")
+      .eq("id", semesterId)
+      .single();
+
+    if (fetchError || !semester) throw fetchError ?? new Error("Semester not found");
+
+    // Deactivate the semester
+    const { error: deactivateError } = await supabase
+      .from("semesters")
+      .update({ is_active: false })
+      .eq("id", semesterId);
+
+    if (deactivateError) throw deactivateError;
+
+    // Deactivate the parent school year
+    const { error: deactivateYearError } = await supabase
+      .from("school_years")
+      .update({ is_active: false })
+      .eq("id", semester.school_year_id);
+
+    if (deactivateYearError) throw deactivateYearError;
+
+    revalidatePath("/admin/registration/archive-list");
+    revalidatePath("/admin/registration/archive-list/semester-list");
+    revalidatePath("/admin/dashboard");
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to deactivate semester.",
     };
   }
 }

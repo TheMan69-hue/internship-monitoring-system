@@ -9,13 +9,27 @@ type DbProgram = {
   updated_at: string | null;
 };
 
-export async function getPrograms(): Promise<Program[]> {
+export async function getPrograms(
+  _filters?: { year?: string; semester?: string }
+): Promise<Program[]> {
   const supabase = createClient();
 
-  const { data: programsData, error: programsError } = await supabase
+  let query = supabase
     .from("programs")
-    .select("id, program_name, required_hours, created_at, updated_at")
-    .order("created_at", { ascending: true });
+    .select("id, program_name, required_hours, created_at, updated_at");
+
+  // NOTE: programs table doesn't have school_year_id/semester_id columns yet.
+  // Uncomment these once those columns exist:
+  // if (filters?.year) {
+  //   query = query.eq("school_year_id", filters.year);
+  // }
+  // if (filters?.semester) {
+  //   query = query.eq("semester_id", filters.semester);
+  // }
+
+  query = query.order("created_at", { ascending: true });
+
+  const { data: programsData, error: programsError } = await query;
 
   if (programsError) {
     throw programsError;

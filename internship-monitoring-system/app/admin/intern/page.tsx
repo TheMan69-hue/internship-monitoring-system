@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Student } from '@/lib/types';
+import YearFilter from '@/components/table/YearFilter';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
 import StudentDetailsModal from '@/components/modals/StudentDetailsModal';
 import { getAllStudents } from '@/lib/services/admin/students';
+import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
 
 export default function InternPage() {
   const [Data, setData] = useState<Student[]>([]);
@@ -13,6 +15,14 @@ export default function InternPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // ── Academic Year / Semester Filter State ──
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedSemester, setSelectedSemester] = useState<string>('');
+  const [currentActiveYear, setCurrentActiveYear] = useState<string>('');
+  const [yearOptions, setYearOptions] = useState<{ value: string; label: string }[]>([]);
+  const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
+  const [semesterDisabled, setSemesterDisabled] = useState(true);
 
   const filteredData = searchQuery.trim()
     ? Data.filter(
@@ -23,21 +33,58 @@ export default function InternPage() {
       )
     : Data;
 
+  // ── Initial Load ──
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       setIsLoading(true);
       try {
-        const students = await getAllStudents();
+        const [students, academicData] = await Promise.all([
+          getAllStudents(),
+          getAcademicPageData(),
+        ]);
         setData(students);
+        setCurrentActiveYear(academicData.activeSchoolYear?.academicYear ?? '');
+        setYearOptions(academicData.yearOptions);
       } catch (error) {
-        console.error('Error fetching students:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchData();
+    load();
   }, []);
+
+  const handleYearChange = async (year: string) => {
+    setSelectedYear(year);
+    setSelectedSemester('');
+    setSemesterDisabled(true);
+    if (year) {
+      try {
+        const semesters = await getSemestersBySchoolYear(year);
+        setSemesterOptions(semesters);
+        setSemesterDisabled(false);
+      } catch (error) {
+        console.error('Error fetching semesters:', error);
+        setSemesterOptions([]);
+      }
+    } else {
+      setSemesterOptions([]);
+    }
+  };
+
+  const handleLoad = async (year: string, semester: string) => {
+    if (!year || !semester) return;
+    setIsLoading(true);
+    try {
+      const filters = { year, semester };
+      const students = await getAllStudents(filters);
+      setData(students);
+    } catch (error) {
+      console.error('Error loading filtered data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleRowClick = (student: Student) => {
     setSelectedStudent(student);
@@ -48,6 +95,23 @@ export default function InternPage() {
     <main className="flex flex-col flex-1 h-full p-5">
       <div className="flex flex-row justify-between items-center text-black mb-5">
         <h1>Intern Management</h1>
+        <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
+      </div>
+      <div>
+        <YearFilter
+          yearLabel="Academic Year"
+          yearOptions={yearOptions}
+          yearValue={selectedYear}
+          onYearChange={handleYearChange}
+          semesterLabel="Semester"
+          semesterOptions={semesterOptions}
+          semesterValue={selectedSemester}
+          onSemesterChange={setSelectedSemester}
+          onLoad={handleLoad}
+          semesterDisabled={semesterDisabled}
+        />
+      </div>
+      <div className="flex flex-row justify-end mb-3">
         <input
           type="text"
           placeholder="Search by name, number, or email..."

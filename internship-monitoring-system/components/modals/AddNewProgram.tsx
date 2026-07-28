@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '@/components/modals/Modal';
 import Button from '@/components/buttons/buttons';
+import { createProgram, updateProgram } from '@/lib/actions/programs';
 
 type AdminProgram = {
   id: string;
@@ -15,23 +16,38 @@ type AdminProgram = {
 interface AddNewProgramProps {
   show: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<AdminProgram, 'id'> & { id?: string }) => void;
+  onSuccess: () => void;
   editData?: AdminProgram | null;
 }
 
 export default function AddNewProgram({
   show,
   onClose,
-  onSubmit,
+  onSuccess,
   editData,
 }: AddNewProgramProps) {
-  const [name, setName] = useState(editData?.name || "");
-  const [requiredHours, setRequiredHours] = useState(editData?.required_hours?.toString() || "");
+  const [name, setName] = useState("");
+  const [requiredHours, setRequiredHours] = useState("");
   const [error, setError] = useState("");
+
+  // Initialize form when editData changes
+  useEffect(() => {
+    const initForm = () => {
+      if (editData) {
+        setName(editData.name ?? "");
+        setRequiredHours(editData.required_hours?.toString() ?? "");
+      } else {
+        setName("");
+        setRequiredHours("");
+      }
+      setError("");
+    };
+    setTimeout(initForm, 0);
+  }, [editData]);
 
   if (!show) return null;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate
     if (!name.trim()) {
       setError("Program name is required.");
@@ -48,12 +64,30 @@ export default function AddNewProgram({
     }
 
     setError("");
-    onSubmit({
-      ...(editData && { id: editData.id }),
-      name: name.trim(),
-      required_hours: hoursNum,
-    });
-    onClose();
+
+    try {
+      let result;
+      if (editData) {
+        result = await updateProgram(editData.id, {
+          program_name: name.trim(),
+          required_hours: hoursNum,
+        });
+      } else {
+        result = await createProgram({
+          program_name: name.trim(),
+          required_hours: hoursNum,
+        });
+      }
+
+      if (result.success) {
+        onSuccess();
+        onClose();
+      } else {
+        setError(result.message ?? "Failed to save program.");
+      }
+    } catch {
+      setError("An unexpected error occurred.");
+    }
   };
 
   return (

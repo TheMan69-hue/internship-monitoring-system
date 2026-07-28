@@ -131,8 +131,9 @@ export type Section = {
 
 export type SchoolYear = {
   id: string;
+  schoolYearId: string;
   academicYear: string;
-  semester: '1st' | '2nd' | 'summer';
+  semester?: '1st' | '2nd' | 'midyear';
   is_active: boolean;
   status: 'active' | 'inactive';
   startDate?: string;
