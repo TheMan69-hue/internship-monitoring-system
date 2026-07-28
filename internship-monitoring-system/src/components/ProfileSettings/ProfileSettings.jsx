@@ -89,7 +89,7 @@ function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout
     }
 
     fetchHteDetails()
-  }, [studentProfile.hte])
+  }, [typeof studentProfile.hte === 'object' ? studentProfile.hte?.name : studentProfile.hte])
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target

@@ -157,12 +157,12 @@ function App() {
   }, [])
 
   // Fetch the active semester to constrain calendar and attendance recording.
-  // Depends on [session] so it runs as an authenticated user and satisfies any
-  // RLS policy on the semesters table. Also re-fetches if the session changes.
+  // Depends on [session?.user?.id] so it runs when user signs in and avoids re-querying
+  // on session token refresh or window focus / tab change events.
   useEffect(() => {
     let isMounted = true
 
-    if (!session) {
+    if (!session?.user?.id) {
       setActiveSemester(null)
       return
     }
@@ -199,7 +199,7 @@ function App() {
     return () => {
       isMounted = false
     }
-  }, [session])
+  }, [session?.user?.id])
 
   useEffect(() => {
     let isMounted = true
@@ -254,7 +254,10 @@ function App() {
         return
       }
 
-      setIsLoadingProfile(true)
+      // Only set full loading indicator if profile has not been loaded yet
+      if (!profile.id) {
+        setIsLoadingProfile(true)
+      }
       setAuthNotice('')
 
       const { data: authUserData, error: authUserError } = await supabase.auth.getUser()
@@ -326,7 +329,7 @@ function App() {
     return () => {
       isMounted = false
     }
-  }, [session])
+  }, [session?.user?.id])
 
   async function upsertStudentProfile(userId, payload) {
     const studentRecord = {

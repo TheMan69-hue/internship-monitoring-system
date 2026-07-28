@@ -153,7 +153,7 @@ export default function AttendanceCalendar({
     return () => {
       isMounted = false
     }
-  }, [viewDate, activeStudentId, userId, activeSemester])
+  }, [viewDate, activeStudentId, userId, activeSemester?.id, activeSemester?.startDate, activeSemester?.endDate])
 
   const attendanceStatusMap = useMemo(() => {
     const map = {}
