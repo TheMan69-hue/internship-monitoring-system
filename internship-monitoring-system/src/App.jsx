@@ -111,10 +111,13 @@ function App() {
       role: previousProfile.role || 'Intern',
       studentNumber: data.student_number,
       program: data.program,
+      programId: data.program_id,
       section: data.section,
+      sectionId: data.section_id,
       phoneNumber: data.phone_number,
       emailAddress: data.email_address,
       location: data.current_location || previousProfile.location,
+      hteId: data.hte_id,
       hte: {
         name: data.hte_name || data.hte || previousProfile.hte?.name || '',
         address: data.hte_address || previousProfile.hte?.address || '',
@@ -254,10 +257,23 @@ function App() {
       setIsLoadingProfile(true)
       setAuthNotice('')
 
+      const { data: authUserData, error: authUserError } = await supabase.auth.getUser()
+      if (!isMounted) return
+
+      if (authUserError || !authUserData?.user) {
+        console.warn('Auth user no longer exists in Supabase. Signing out...')
+        await supabase.auth.signOut()
+        setSession(null)
+        setRequiresProfileCompletion(false)
+        setIsLoadingProfile(false)
+        setAuthNotice('Your account was deleted or no longer exists. Please sign in or create a new account.')
+        return
+      }
+
       const { data, error } = await supabase
         .from('students')
         .select(
-          'id, student_number, name, program, section, hte, hte_name, hte_address, hte_time_completion, hte_work_schedule, hte_working_time, phone_number, email_address, current_location',
+          'id, student_number, name, program, program_id, section, section_id, hte, hte_id, hte_name, hte_address, hte_time_completion, hte_work_schedule, hte_working_time, phone_number, email_address, current_location',
         )
         .eq('user_id', user.id)
         .maybeSingle()
@@ -321,6 +337,24 @@ function App() {
       section: payload.section,
       phone_number: payload.phoneNumber,
       email_address: payload.email,
+    }
+
+    if (payload.programId) {
+      studentRecord.program_id = payload.programId
+    } else if (profile.programId) {
+      studentRecord.program_id = profile.programId
+    }
+
+    if (payload.sectionId) {
+      studentRecord.section_id = payload.sectionId
+    } else if (profile.sectionId) {
+      studentRecord.section_id = profile.sectionId
+    }
+
+    if (payload.hteId) {
+      studentRecord.hte_id = payload.hteId
+    } else if (profile.hteId) {
+      studentRecord.hte_id = profile.hteId
     }
 
     const hteName = payload.hteName ?? (typeof payload.hte === 'string' ? payload.hte : payload.hte?.name)
@@ -426,8 +460,11 @@ function App() {
     fullName,
     studentNumber,
     program,
+    programId,
     section,
+    sectionId,
     hte,
+    hteId,
     phoneNumber,
     setFormMessage,
   }) {
@@ -475,8 +512,11 @@ function App() {
         fullName,
         studentNumber,
         program,
+        programId,
         section,
+        sectionId,
         hteName: hte,
+        hteId,
         phoneNumber,
       })
       setRequiresProfileCompletion(false)
@@ -534,8 +574,11 @@ function App() {
     fullName,
     studentNumber,
     program,
+    programId,
     section,
+    sectionId,
     hte,
+    hteId,
     phoneNumber,
     setFormMessage,
   }) {
@@ -554,8 +597,11 @@ function App() {
         fullName,
         studentNumber,
         program,
+        programId,
         section,
+        sectionId,
         hteName: hte,
+        hteId,
         phoneNumber,
       })
 
@@ -577,6 +623,10 @@ function App() {
     await supabase.auth.signOut()
     window.location.hash = ''
     setCurrentPage('dashboard')
+    setRequiresProfileCompletion(false)
+    setSession(null)
+    setAuthMode('sign-in')
+    setAuthNotice('')
   }
 
   if (isInitializingAuth) {
@@ -611,14 +661,17 @@ function App() {
       <AuthPage
         authMode="onboarding"
         authUser={session.user}
-        authNotice="Complete your student profile to continue to your dashboard."
+        authNotice={authNotice || "Complete your student profile to continue to your dashboard."}
         onSignIn={handleSignIn}
         onSignUp={handleSignUp}
         onGoogleSignIn={handleGoogleSignIn}
         onForgotPassword={handleForgotPassword}
         onCompleteProfile={handleCompleteProfile}
-        onSwitchToSignIn={() => { }}
-        onSwitchToSignUp={() => { }}
+        onSwitchToSignIn={handleLogout}
+        onSwitchToSignUp={async () => {
+          await handleLogout()
+          setAuthMode('sign-up')
+        }}
         isBusy={isAuthBusy}
       />
     )

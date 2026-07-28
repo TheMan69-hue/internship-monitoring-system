@@ -2,8 +2,6 @@ import { useMemo, useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import './AuthPage.css'
 
-const DIGIT_OPTIONS = ['1', '2', '3', '4', '5']
-
 function AuthPage({
   authMode,
   authUser,
@@ -23,27 +21,36 @@ function AuthPage({
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [fullName, setFullName] = useState(authUser?.user_metadata?.full_name ?? '')
   const [studentNumber, setStudentNumber] = useState('')
-  const [program, setProgram] = useState('')
-  const [programOptions, setProgramOptions] = useState([])
-  const [sectionYear, setSectionYear] = useState('1')
-  const [sectionGroup, setSectionGroup] = useState('1')
-  const [hte, setHte] = useState('')
+  
+  const [programsList, setProgramsList] = useState([])
+  const [selectedProgramId, setSelectedProgramId] = useState('')
+  const [isLoadingPrograms, setIsLoadingPrograms] = useState(false)
+
+  const [sectionsList, setSectionsList] = useState([])
+  const [selectedSectionId, setSelectedSectionId] = useState('')
+  const [isLoadingSections, setIsLoadingSections] = useState(false)
+
+  const [selectedHteId, setSelectedHteId] = useState('')
+  const [hteCompaniesList, setHteCompaniesList] = useState([])
   const [phoneNumber, setPhoneNumber] = useState('')
   const [formMessage, setFormMessage] = useState('')
 
-  const [hteCompaniesList, setHteCompaniesList] = useState([])
-
   useEffect(() => {
     const fetchPrograms = async () => {
+      setIsLoadingPrograms(true)
       try {
-        const { data, error } = await supabase.from('programs').select('program_name').order('program_name')
+        const { data, error } = await supabase
+          .from('programs')
+          .select('id, program_name')
+          .order('program_name', { ascending: true })
+
         if (error) throw error
 
-        const names = (data ?? []).map((item) => item.program_name).filter(Boolean)
-        setProgramOptions(names)
-        if (names.length > 0) setProgram((current) => current || names[0])
+        setProgramsList(data ?? [])
       } catch (err) {
         console.warn('Failed to fetch programs:', err)
+      } finally {
+        setIsLoadingPrograms(false)
       }
     }
 
@@ -53,18 +60,16 @@ function AuthPage({
       try {
         const { data, error } = await supabase
           .from('hte_companies')
-          .select('company_name')
+          .select('id, company_name')
           .order('company_name', { ascending: true })
 
         if (error) throw error
 
         if (data) {
-          const names = data.map(item => item.company_name)
-          setHteCompaniesList(names)
-          
-          // Pre-select the first HTE in the list if empty
-          if (names.length > 0 && !hte) {
-            setHte(names[0])
+          setHteCompaniesList(data)
+
+          if (data.length > 0 && !selectedHteId) {
+            setSelectedHteId(data[0].id)
           }
         }
       } catch (err) {
@@ -75,7 +80,34 @@ function AuthPage({
     fetchHteCompanies()
   }, [])
 
-  const section = `${program} ${sectionYear} - ${sectionGroup}`
+  useEffect(() => {
+    if (!selectedProgramId) {
+      setSectionsList([])
+      setSelectedSectionId('')
+      return
+    }
+
+    const fetchSections = async () => {
+      setIsLoadingSections(true)
+      try {
+        const { data, error } = await supabase
+          .from('sections')
+          .select('id, section_name')
+          .eq('program_id', selectedProgramId)
+          .order('section_name', { ascending: true })
+
+        if (error) throw error
+        setSectionsList(data ?? [])
+      } catch (err) {
+        console.warn('Failed to fetch sections:', err)
+        setSectionsList([])
+      } finally {
+        setIsLoadingSections(false)
+      }
+    }
+
+    fetchSections()
+  }, [selectedProgramId])
 
   const title = useMemo(() => {
     if (authMode === 'sign-up') {
@@ -88,6 +120,11 @@ function AuthPage({
 
     return 'LOG IN YOUR ACCOUNT'
   }, [authMode])
+
+  const handleProgramChange = (e) => {
+    setSelectedProgramId(e.target.value)
+    setSelectedSectionId('')
+  }
 
   const handleSignInSubmit = async (event) => {
     event.preventDefault()
@@ -105,7 +142,20 @@ function AuthPage({
     event.preventDefault()
     setFormMessage('')
 
-    if (!fullName || !studentNumber || !program || !hte || !email || !phoneNumber || !password || !confirmPassword) {
+    const selectedProgramObj = programsList.find((p) => p.id === selectedProgramId)
+    const selectedSectionObj = sectionsList.find((s) => s.id === selectedSectionId)
+    const selectedHteObj = hteCompaniesList.find((h) => h.id === selectedHteId)
+
+    if (
+      !fullName ||
+      !studentNumber ||
+      !selectedProgramId ||
+      !selectedSectionId ||
+      !selectedHteId ||
+      !email ||
+      !password ||
+      !confirmPassword
+    ) {
       setFormMessage('Please complete all required fields.')
       return
     }
@@ -120,9 +170,12 @@ function AuthPage({
       password,
       fullName,
       studentNumber,
-      program,
-      section,
-      hte,
+      program: selectedProgramObj?.program_name ?? '',
+      programId: selectedProgramId,
+      section: selectedSectionObj?.section_name ?? '',
+      sectionId: selectedSectionId,
+      hte: selectedHteObj?.company_name ?? '',
+      hteId: selectedHteId,
       phoneNumber,
       setFormMessage,
     })
@@ -132,7 +185,11 @@ function AuthPage({
     event.preventDefault()
     setFormMessage('')
 
-    if (!fullName || !studentNumber || !program || !hte || !email || !phoneNumber) {
+    const selectedProgramObj = programsList.find((p) => p.id === selectedProgramId)
+    const selectedSectionObj = sectionsList.find((s) => s.id === selectedSectionId)
+    const selectedHteObj = hteCompaniesList.find((h) => h.id === selectedHteId)
+
+    if (!fullName || !studentNumber || !selectedProgramId || !selectedSectionId || !selectedHteId || !email) {
       setFormMessage('Please complete all required fields.')
       return
     }
@@ -141,9 +198,12 @@ function AuthPage({
       email,
       fullName,
       studentNumber,
-      program,
-      section,
-      hte,
+      program: selectedProgramObj?.program_name ?? '',
+      programId: selectedProgramId,
+      section: selectedSectionObj?.section_name ?? '',
+      sectionId: selectedSectionId,
+      hte: selectedHteObj?.company_name ?? '',
+      hteId: selectedHteId,
       phoneNumber,
       setFormMessage,
     })
@@ -165,6 +225,17 @@ function AuthPage({
   return (
     <main className="auth-shell">
       <section className="auth-panel" aria-label="Student authentication">
+        {isSignUp || isOnboarding ? (
+          <button
+            type="button"
+            className="auth-back-button"
+            onClick={onSwitchToSignIn}
+            aria-label="Back to login page"
+          >
+            ← Back to Login
+          </button>
+        ) : null}
+
         <h1>{title}</h1>
 
         {authNotice ? (
@@ -230,45 +301,55 @@ function AuthPage({
             />
 
             <label htmlFor="sign-up-program">Program</label>
-            <select id="sign-up-program" value={program} onChange={(event) => setProgram(event.target.value)}>
-              <option value="">-- Select program --</option>
-              {programOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+            <select
+              id="sign-up-program"
+              value={selectedProgramId}
+              onChange={handleProgramChange}
+              disabled={isLoadingPrograms}
+            >
+              <option value="">
+                {isLoadingPrograms ? 'Loading programs...' : '-- Select program --'}
+              </option>
+              {programsList.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.program_name}
                 </option>
               ))}
             </select>
 
-            <label>Section</label>
-            <div className="auth-section-picker">
-              <span>{program}</span>
-              <select value={sectionYear} onChange={(event) => setSectionYear(event.target.value)}>
-                {DIGIT_OPTIONS.map((option) => (
-                  <option key={`year-${option}`} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              <span>-</span>
-              <select value={sectionGroup} onChange={(event) => setSectionGroup(event.target.value)}>
-                {DIGIT_OPTIONS.map((option) => (
-                  <option key={`group-${option}`} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <label htmlFor="sign-up-section">Section</label>
+            <select
+              id="sign-up-section"
+              value={selectedSectionId}
+              onChange={(event) => setSelectedSectionId(event.target.value)}
+              disabled={!selectedProgramId || isLoadingSections || sectionsList.length === 0}
+            >
+              <option value="">
+                {!selectedProgramId
+                  ? '-- Select a program first --'
+                  : isLoadingSections
+                  ? 'Loading sections...'
+                  : sectionsList.length === 0
+                  ? '-- No sections available --'
+                  : '-- Select section --'}
+              </option>
+              {sectionsList.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.section_name}
+                </option>
+              ))}
+            </select>
 
             <label htmlFor="sign-up-hte">HTE</label>
             <select 
               id="sign-up-hte" 
-              value={hte} 
-              onChange={(event) => setHte(event.target.value)}
+              value={selectedHteId} 
+              onChange={(event) => setSelectedHteId(event.target.value)}
             >
               <option value="">-- Select HTE Company --</option>
               {hteCompaniesList.map((company) => (
-                <option key={company} value={company}>
-                  {company}
+                <option key={company.id} value={company.id}>
+                  {company.company_name}
                 </option>
               ))}
             </select>
@@ -282,12 +363,13 @@ function AuthPage({
               autoComplete="email"
             />
 
-            <label htmlFor="sign-up-phone">Phone Number</label>
+            <label htmlFor="sign-up-phone">Phone Number (Optional)</label>
             <input
               id="sign-up-phone"
               type="tel"
               value={phoneNumber}
               onChange={(event) => setPhoneNumber(event.target.value)}
+              placeholder="Optional"
             />
 
             <label htmlFor="sign-up-password">Password</label>
@@ -333,45 +415,55 @@ function AuthPage({
             />
 
             <label htmlFor="onboarding-program">Program</label>
-            <select id="onboarding-program" value={program} onChange={(event) => setProgram(event.target.value)}>
-              <option value="">-- Select program --</option>
-              {programOptions.map((option) => (
-                <option key={`onboarding-${option}`} value={option}>
-                  {option}
+            <select
+              id="onboarding-program"
+              value={selectedProgramId}
+              onChange={handleProgramChange}
+              disabled={isLoadingPrograms}
+            >
+              <option value="">
+                {isLoadingPrograms ? 'Loading programs...' : '-- Select program --'}
+              </option>
+              {programsList.map((option) => (
+                <option key={`onboarding-${option.id}`} value={option.id}>
+                  {option.program_name}
                 </option>
               ))}
             </select>
 
-            <label>Section</label>
-            <div className="auth-section-picker">
-              <span>{program}</span>
-              <select value={sectionYear} onChange={(event) => setSectionYear(event.target.value)}>
-                {DIGIT_OPTIONS.map((option) => (
-                  <option key={`onboarding-year-${option}`} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              <span>-</span>
-              <select value={sectionGroup} onChange={(event) => setSectionGroup(event.target.value)}>
-                {DIGIT_OPTIONS.map((option) => (
-                  <option key={`onboarding-group-${option}`} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <label htmlFor="onboarding-section">Section</label>
+            <select
+              id="onboarding-section"
+              value={selectedSectionId}
+              onChange={(event) => setSelectedSectionId(event.target.value)}
+              disabled={!selectedProgramId || isLoadingSections || sectionsList.length === 0}
+            >
+              <option value="">
+                {!selectedProgramId
+                  ? '-- Select a program first --'
+                  : isLoadingSections
+                  ? 'Loading sections...'
+                  : sectionsList.length === 0
+                  ? '-- No sections available --'
+                  : '-- Select section --'}
+              </option>
+              {sectionsList.map((option) => (
+                <option key={`onboarding-${option.id}`} value={option.id}>
+                  {option.section_name}
+                </option>
+              ))}
+            </select>
 
             <label htmlFor="onboarding-hte">HTE</label>
             <select 
               id="onboarding-hte" 
-              value={hte} 
-              onChange={(event) => setHte(event.target.value)}
+              value={selectedHteId} 
+              onChange={(event) => setSelectedHteId(event.target.value)}
             >
               <option value="">-- Select HTE Company --</option>
               {hteCompaniesList.map((company) => (
-                <option key={`onboard-hte-${company}`} value={company}>
-                  {company}
+                <option key={`onboard-hte-${company.id}`} value={company.id}>
+                  {company.company_name}
                 </option>
               ))}
             </select>
@@ -384,12 +476,13 @@ function AuthPage({
               autoComplete="email"
             />
 
-            <label htmlFor="onboarding-phone">Phone Number</label>
+            <label htmlFor="onboarding-phone">Phone Number (Optional)</label>
             <input
               id="onboarding-phone"
               type="tel"
               value={phoneNumber}
               onChange={(event) => setPhoneNumber(event.target.value)}
+              placeholder="Optional"
             />
 
             <button type="submit" className="auth-button" disabled={isBusy}>
