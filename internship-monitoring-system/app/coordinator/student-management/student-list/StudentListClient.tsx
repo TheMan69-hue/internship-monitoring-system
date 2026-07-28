@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import SearchBar from "@/components/search/SearchBar";
 import DataTable from "@/components/table/DataTable";
@@ -21,6 +21,41 @@ export default function StudentListClient({
 }: StudentListClientProps) {
     const [selectedStudent, setSelectedStudent] =
     useState<Student | null>(null);
+
+    const [search, setSearch] = useState("");
+
+    const filteredStudents = useMemo(() => {
+        const keyword = search.toLowerCase().trim();
+
+        if (!keyword) return students;
+
+        return students.filter((student) => {
+            const hte = student.hte?.companyName ?? "";
+
+            return (
+            student.studentNumber
+                .toLowerCase()
+                .includes(keyword) ||
+
+            student.name
+                .toLowerCase()
+                .includes(keyword) ||
+
+            student.program
+                .toLowerCase()
+                .includes(keyword) ||
+
+            student.section
+                .toLowerCase()
+                .includes(keyword) ||
+
+            hte
+                .toLowerCase()
+                .includes(keyword)
+            );
+        });
+        }, [students, search]);
+
   return (
     <div className="rounded-[20px] bg-white p-6 shadow-sm">
 
@@ -64,17 +99,19 @@ export default function StudentListClient({
 
         </div>
 
-        <SearchBar />
+        <SearchBar
+            value={search}
+            onChange={setSearch}
+        />
 
         </div>
 
        <DataTable columns={studentColumns}>
-            {students.map((student) => (
+            {filteredStudents.map((student) => (
                 <tr
                 key={student.id}
                 className="cursor-pointer border-t transition-colors hover:bg-[#F3F4F6]"
                 onClick={() => {
-                    console.log("CLICKED STUDENT:", student);
                     setSelectedStudent(student);
                     }}
                 >

@@ -72,6 +72,11 @@ export interface AttendanceLog {
   timeOut: string | null;
   location: string | null;
   status: string;
+
+  flaggedForReview: boolean;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+
   gpsCoordinates: string | null;
 }
 

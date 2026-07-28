@@ -1,7 +1,6 @@
 import RecentActivitiesTable from "@/components/table/RecentActivitiesTable";
 import DashboardCard from "@/components/cards/DashboardCard";
 import AttendanceOverviewCard from "@/components/cards/AttendanceOverviewCard";
-import SearchBar from "@/components/search/SearchBar";
 import { getRecentActivities } from "@/lib/services/coordinator/recentActivities";
 import { getDashboardStats } from "@/lib/services/coordinator/dashboard";
 import { getAttendanceSummary } from "@/lib/services/coordinator/attendance";
@@ -51,13 +50,6 @@ export default async function CoordinatorDashboardPage() {
   return (
 
     <div>
-
-      <div className="mb-6 flex justify-end">
-
-        <SearchBar />
-
-      </div>
-
       {/* Dashboard Cards */}
 
       <div className="grid grid-cols-4 gap-6">

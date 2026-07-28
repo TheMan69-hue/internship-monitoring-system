@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import HTEFormModal from "@/components/modals/HTEFormModal";
 import RegisterHTEModal from "@/components/modals/RegisterHTEModal";
 import SearchBar from "@/components/search/SearchBar";
@@ -18,6 +18,42 @@ export default function HTEManagementClient({
   const [editingHTE, setEditingHTE] = useState<HTE | null>(null);
   const [htes, setHTEs] = useState(initialHTEs);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredHTEs = useMemo(() => {
+    const keyword = search.toLowerCase().trim();
+
+    if (!keyword) return htes;
+
+    return htes.filter((hte) => {
+      return (
+        hte.company
+          .toLowerCase()
+          .includes(keyword) ||
+
+        hte.address
+          .toLowerCase()
+          .includes(keyword) ||
+
+        (hte.contactPerson ?? "")
+          .toLowerCase()
+          .includes(keyword) ||
+
+        (hte.email ?? "")
+          .toLowerCase()
+          .includes(keyword) ||
+
+        (hte.phone ?? "")
+          .toLowerCase()
+          .includes(keyword) ||
+
+        (hte.workSchedule ?? "")
+          .toLowerCase()
+          .includes(keyword)
+      );
+    });
+  }, [htes, search]);
+
   return (
     <div>
 
@@ -31,12 +67,15 @@ export default function HTEManagementClient({
             + Add HTE
         </button>
 
-        <SearchBar />
+        <SearchBar
+          value={search}
+          onChange={setSearch}
+        />
       </div>
 
       {/* Table */}
       <HTETable
-        data={htes}
+        data={filteredHTEs}
         onRowClick={(hte) => setSelectedHTE(hte)}
       />
       {selectedHTE && (

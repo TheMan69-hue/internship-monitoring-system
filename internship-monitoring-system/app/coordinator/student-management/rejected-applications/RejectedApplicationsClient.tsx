@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import SearchBar from "@/components/search/SearchBar";
 import DataTable from "@/components/table/DataTable";
@@ -46,7 +46,27 @@ export default function RejectedApplicationsClient({
   const [selectedStudent, setSelectedStudent] =
     useState<RejectedStudent | null>(null);
 
+  const [search, setSearch] = useState("");
   const router = useRouter();
+
+  const filteredStudents = useMemo(() => {
+    const keyword = search.toLowerCase().trim();
+
+    if (!keyword) return students;
+
+    return students.filter((student) => {
+      const hte =
+        student.hte_companies?.[0]?.company_name ?? "";
+
+      return (
+        student.student_number.toLowerCase().includes(keyword) ||
+        student.name.toLowerCase().includes(keyword) ||
+        student.program.toLowerCase().includes(keyword) ||
+        student.section.toLowerCase().includes(keyword) ||
+        hte.toLowerCase().includes(keyword)
+      );
+    });
+  }, [students, search]);
   const [showActionModal, setShowActionModal] =
     useState(false);
 
@@ -151,12 +171,15 @@ export default function RejectedApplicationsClient({
       </h2>
 
       <div className="mb-6 flex justify-end">
-        <SearchBar />
+        <SearchBar
+          value={search}
+          onChange={setSearch}
+        />
       </div>
 
       <DataTable columns={rejectedApplicationColumns}>
 
-        {students.map((student) => (
+        {filteredStudents.map((student) => (
 
           <tr
             key={student.id}
