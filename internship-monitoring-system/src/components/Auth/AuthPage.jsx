@@ -35,6 +35,16 @@ function AuthPage({
   const [phoneNumber, setPhoneNumber] = useState('')
   const [formMessage, setFormMessage] = useState('')
 
+  // Derived: what approval path will this email follow?
+  const emailDomainHint = (() => {
+    const trimmed = email.trim().toLowerCase()
+    if (!trimmed.includes('@')) return null
+    if (trimmed.endsWith('@cvsu.edu.ph')) {
+      return { type: 'cvsu', text: '✅ CvSU email detected — your account will be approved automatically.' }
+    }
+    return { type: 'noncvsu', text: '⏳ Non-CvSU email — your registration will be sent for OJT Coordinator review before you can access the dashboard.' }
+  })()
+
   useEffect(() => {
     const fetchPrograms = async () => {
       setIsLoadingPrograms(true)
@@ -362,6 +372,11 @@ function AuthPage({
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
             />
+            {isSignUp && emailDomainHint ? (
+              <p className={`auth-email-hint auth-email-hint--${emailDomainHint.type}`} role="note">
+                {emailDomainHint.text}
+              </p>
+            ) : null}
 
             <label htmlFor="sign-up-phone">Phone Number (Optional)</label>
             <input

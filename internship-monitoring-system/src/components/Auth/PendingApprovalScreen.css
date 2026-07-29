@@ -1,0 +1,307 @@
+/* ===================================================
+   PendingApprovalScreen.css
+   =================================================== */
+
+.pending-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated background orbs */
+.pending-shell::before,
+.pending-shell::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.pending-shell::before {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #e67e22, transparent);
+  top: -150px;
+  right: -100px;
+  animation: orb-float 8s ease-in-out infinite;
+}
+
+.pending-shell::after {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #8e44ad, transparent);
+  bottom: -120px;
+  left: -80px;
+  animation: orb-float 10s ease-in-out infinite reverse;
+}
+
+@keyframes orb-float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-30px) scale(1.05); }
+}
+
+/* Main card */
+.pending-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 56px 48px;
+  max-width: 520px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 32px 64px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Animated clock / status icon */
+.pending-icon-wrapper {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(230, 126, 34, 0.2), rgba(230, 126, 34, 0.05));
+  border: 2px solid rgba(230, 126, 34, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pending-icon-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(230, 126, 34, 0.15);
+  animation: pulse-ring 2.5s ease-out infinite;
+}
+
+.pending-icon-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  border: 2px solid rgba(230, 126, 34, 0.08);
+  animation: pulse-ring 2.5s ease-out infinite 0.5s;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+
+.pending-icon {
+  font-size: 2.5rem;
+  animation: icon-spin 6s linear infinite;
+}
+
+@keyframes icon-spin {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(10deg); }
+  75% { transform: rotate(-10deg); }
+}
+
+/* Text content */
+.pending-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(230, 126, 34, 0.15);
+  border: 1px solid rgba(230, 126, 34, 0.3);
+  color: #f39c12;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 999px;
+}
+
+.pending-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f39c12;
+  animation: blink-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes blink-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.pending-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  font-weight: 700;
+  color: #f0f0f0;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.pending-message {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.96rem;
+  line-height: 1.7;
+  max-width: 380px;
+}
+
+/* Status feedback area */
+.pending-status-area {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 20px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.pending-status-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.pending-status-text {
+  font-size: 0.87rem;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: left;
+  flex: 1;
+}
+
+.pending-status-text.is-checking {
+  color: #f39c12;
+  animation: fade-pulse 1.5s ease-in-out infinite;
+}
+
+.pending-status-text.is-approved {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+.pending-status-text.is-error {
+  color: #e74c3c;
+}
+
+@keyframes fade-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Action buttons */
+.pending-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.pending-btn {
+  width: 100%;
+  border-radius: 10px;
+  padding: 13px 20px;
+  font-size: 0.93rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.pending-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.pending-btn--primary {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(230, 126, 34, 0.35);
+}
+
+.pending-btn--primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(230, 126, 34, 0.5);
+}
+
+.pending-btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pending-btn--ghost {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pending-btn--ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Divider */
+.pending-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 0.78rem;
+}
+
+.pending-divider::before,
+.pending-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Realtime badge */
+.pending-realtime-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.77rem;
+}
+
+.pending-realtime-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2ecc71;
+  animation: blink-dot 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Mobile */
+@media (max-width: 560px) {
+  .pending-card {
+    padding: 40px 24px;
+    gap: 22px;
+    border-radius: 20px;
+  }
+}

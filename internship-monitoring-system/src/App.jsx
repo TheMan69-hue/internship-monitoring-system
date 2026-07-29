@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import AuthPage from './components/Auth/AuthPage'
 import Dashboard from './components/Dashboard/Dashboard'
 import ProfileSettings from './components/ProfileSettings/ProfileSettings'
+import PendingApprovalScreen from './components/Auth/PendingApprovalScreen'
 import { supabase } from './supabaseClient'
+
+// Returns true for official CvSU email addresses (auto-approved path)
+function isCvSUEmail(email) {
+  return typeof email === 'string' && email.toLowerCase().endsWith('@cvsu.edu.ph')
+}
 
 const emptyStudentProfile = {
   name: '',
@@ -100,7 +106,12 @@ function App() {
   const [authMode, setAuthMode] = useState('sign-in')
   const [authNotice, setAuthNotice] = useState('')
   const [requiresProfileCompletion, setRequiresProfileCompletion] = useState(false)
+  // true when a non-CvSU student is registered but not yet approved by OJT Coordinator
+  const [isPendingApproval, setIsPendingApproval] = useState(false)
   const isProvisioningProfileRef = useRef(false)
+  // Mirrors isPendingApproval state in a ref so async loadStudentProfile can
+  // read the current value without being listed as a useEffect dependency.
+  const isPendingApprovalRef = useRef(false)
   const [activeSemester, setActiveSemester] = useState(null)
 
   function applyStudentProfile(data) {
@@ -231,6 +242,8 @@ function App() {
 
       if (!nextSession) {
         setRequiresProfileCompletion(false)
+        setIsPendingApproval(false)
+        isPendingApprovalRef.current = false
         setIsLoadingProfile(false)
         setProfile(emptyStudentProfile)
         setCurrentPage('dashboard')
@@ -293,8 +306,40 @@ function App() {
       }
 
       if (!data) {
+        // If profile provisioning is still in progress, wait — don't set any
+        // completion flags yet.
         if (isProvisioningProfileRef.current) {
           return
+        }
+
+        // If this user is already known to be in the pending-approval flow,
+        // do not override that state with requiresProfileCompletion.
+        if (isPendingApprovalRef.current) {
+          setIsLoadingProfile(false)
+          return
+        }
+
+        // No student record — check if this user has a pending registration
+        const userEmailForLookup = authUserData?.user?.email
+        if (userEmailForLookup) {
+          const { data: regData, error: regError } = await supabase
+            .from('student_registrations')
+            .select('status')
+            .eq('email_address', userEmailForLookup)
+            .maybeSingle()
+
+          if (!isMounted) return
+
+          if (!regError && regData) {
+            if (regData.status === 'Pending') {
+              isPendingApprovalRef.current = true
+              setIsPendingApproval(true)
+              setIsLoadingProfile(false)
+              return
+            }
+            // If Approved but not yet in students table, fall through to
+            // profile-completion so the coordinator can trigger the copy.
+          }
         }
 
         setRequiresProfileCompletion(true)
@@ -303,6 +348,7 @@ function App() {
       }
 
       setRequiresProfileCompletion(false)
+      setIsPendingApproval(false)
       applyStudentProfile(data)
 
       const { data: records, error: recordsError } = await supabase
@@ -510,20 +556,51 @@ function App() {
         return
       }
 
-      await upsertStudentProfile(data.user.id, {
-        email,
-        fullName,
-        studentNumber,
-        program,
-        programId,
-        section,
-        sectionId,
-        hteName: hte,
-        hteId,
-        phoneNumber,
-      })
-      setRequiresProfileCompletion(false)
-      setCurrentPage('dashboard')
+      // ── Email domain branching ────────────────────────────────────────────
+      if (isCvSUEmail(email)) {
+        // CvSU accounts are auto-approved — insert directly into students table
+        await upsertStudentProfile(data.user.id, {
+          email,
+          fullName,
+          studentNumber,
+          program,
+          programId,
+          section,
+          sectionId,
+          hteName: hte,
+          hteId,
+          phoneNumber,
+        })
+        setRequiresProfileCompletion(false)
+        setIsPendingApproval(false)
+        setCurrentPage('dashboard')
+      } else {
+        // Non-CvSU accounts → insert into student_registrations with Pending status
+        const { error: regError } = await supabase.from('student_registrations').insert({
+          student_number: studentNumber,
+          name: fullName,
+          program,
+          program_id: programId || null,
+          section,
+          section_id: sectionId || null,
+          phone_number: phoneNumber || null,
+          email_address: email,
+          hte_id: hteId || null,
+          status: 'Pending',
+        })
+
+        if (regError) {
+          throw regError
+        }
+
+        // Sync the ref BEFORE releasing isProvisioningProfileRef so that any
+        // concurrent loadStudentProfile run cannot set requiresProfileCompletion.
+        isPendingApprovalRef.current = true
+        isProvisioningProfileRef.current = false
+        setIsPendingApproval(true)
+        setRequiresProfileCompletion(false)
+      }
+
       setSession({ ...data.session })
     } catch (error) {
       setFormMessage(error.message || 'Unable to create your student account right now.')
@@ -595,21 +672,47 @@ function App() {
     setIsAuthBusy(true)
 
     try {
-      await upsertStudentProfile(userId, {
-        email,
-        fullName,
-        studentNumber,
-        program,
-        programId,
-        section,
-        sectionId,
-        hteName: hte,
-        hteId,
-        phoneNumber,
-      })
+      if (isCvSUEmail(email)) {
+        // CvSU email: insert directly into students table (auto-approved)
+        await upsertStudentProfile(userId, {
+          email,
+          fullName,
+          studentNumber,
+          program,
+          programId,
+          section,
+          sectionId,
+          hteName: hte,
+          hteId,
+          phoneNumber,
+        })
+        setRequiresProfileCompletion(false)
+        setIsPendingApproval(false)
+        setAuthNotice('')
+      } else {
+        // Non-CvSU: insert into student_registrations with Pending status
+        const { error: regError } = await supabase.from('student_registrations').insert({
+          student_number: studentNumber,
+          name: fullName,
+          program,
+          program_id: programId || null,
+          section,
+          section_id: sectionId || null,
+          phone_number: phoneNumber || null,
+          email_address: email,
+          hte_id: hteId || null,
+          status: 'Pending',
+        })
 
-      setRequiresProfileCompletion(false)
-      setAuthNotice('')
+        if (regError) {
+          throw regError
+        }
+
+        setRequiresProfileCompletion(false)
+        isPendingApprovalRef.current = true
+        setIsPendingApproval(true)
+        setAuthNotice('')
+      }
     } catch (error) {
       setFormMessage(error.message || 'Unable to save your profile.')
     } finally {
@@ -627,9 +730,23 @@ function App() {
     window.location.hash = ''
     setCurrentPage('dashboard')
     setRequiresProfileCompletion(false)
+    isPendingApprovalRef.current = false
+    setIsPendingApproval(false)
     setSession(null)
     setAuthMode('sign-in')
     setAuthNotice('')
+  }
+
+  // Called by PendingApprovalScreen when the Realtime subscription or manual
+  // check detects that the coordinator has approved the registration.
+  async function handleApprovalGranted() {
+    isPendingApprovalRef.current = false
+    setIsPendingApproval(false)
+    setIsLoadingProfile(true)
+    // Re-trigger the profile load which will now either find a students row
+    // (if the coordinator's approval flow created one) or show the onboarding form.
+    // We re-use the session user change side-effect by temporarily resetting profile.
+    setProfile(emptyStudentProfile)
   }
 
   if (isInitializingAuth) {
@@ -655,6 +772,17 @@ function App() {
           setAuthNotice('')
         }}
         isBusy={isAuthBusy}
+      />
+    )
+  }
+
+  // ── Auth guard: non-CvSU student pending OJT Coordinator approval ────────────
+  if (isPendingApproval) {
+    return (
+      <PendingApprovalScreen
+        userEmail={session.user?.email}
+        onApproved={handleApprovalGranted}
+        onSignOut={handleLogout}
       />
     )
   }

@@ -189,3 +189,25 @@
     margin-inline: auto;
   }
 }
+
+/* ── Email domain approval hint ─────────────────────────────────────── */
+.auth-email-hint {
+  margin: 2px 0 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  border-left: 3px solid transparent;
+}
+
+.auth-email-hint--cvsu {
+  background: rgba(22, 163, 74, 0.1);
+  border-left-color: #16a34a;
+  color: #166534;
+}
+
+.auth-email-hint--noncvsu {
+  background: rgba(217, 119, 6, 0.1);
+  border-left-color: #d97706;
+  color: #92400e;
+}
