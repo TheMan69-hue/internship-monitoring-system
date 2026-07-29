@@ -100,6 +100,29 @@ export async function rejectRegistration(
     throw deleteError;
   }
 
+  // Write audit log (FR 3.2.7)
+  try {
+    const serverClient = await createClient();
+    const { data: { user } } = await serverClient.auth.getUser();
+    let profileId: string | null = null;
+    if (user?.id) {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      profileId = profile?.id ?? null;
+    }
+    await supabaseAdmin.from("audit_logs").insert({
+      user_id: profileId,
+      action: "reject_registration",
+      table_name: "student_registrations",
+      description: `Rejected registration for ${registration.name}`,
+    });
+  } catch {
+    // Audit log failure should not block rejection
+  }
+
   return {
     success: true,
     message:

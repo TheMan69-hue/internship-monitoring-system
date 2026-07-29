@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { writeAuditLog } from "@/lib/services/admin/audit";
 
 export async function createCoordinator(data: {
   name: string;
@@ -95,6 +96,9 @@ export async function createCoordinator(data: {
       .single();
 
     if (coordinatorError) throw coordinatorError;
+
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("create_coordinator", { table_name: "coordinators", record_id: coordinator.id, description: `Created coordinator: ${data.name}` });
 
     if (data.section_ids.length > 0) {
       const assignments = (sections ?? []).map((section) => ({
@@ -217,6 +221,9 @@ export async function updateCoordinator(
 
     revalidatePath("/admin/ojt-coordinator");
 
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("update_coordinator", { table_name: "coordinators", record_id: coordinatorId, description: `Updated coordinator` });
+
     return { success: true };
   } catch (error) {
     console.error("updateCoordinator error:", error);
@@ -287,6 +294,9 @@ export async function deleteCoordinator(coordinatorId: string) {
     if (profileError) throw profileError;
 
     revalidatePath("/admin/ojt-coordinator");
+
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("delete_coordinator", { table_name: "coordinators", record_id: coordinatorId, description: `Deleted coordinator` });
 
     return { success: true };
   } catch (error) {

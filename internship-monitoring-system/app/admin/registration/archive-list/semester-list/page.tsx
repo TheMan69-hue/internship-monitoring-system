@@ -87,6 +87,7 @@ export default function SemesterListPage() {
         const result = await deactivateSemesterAction(row.id);
         if (result.success) {
           await fetchData();
+          window.dispatchEvent(new CustomEvent('academic-data-changed'));
         } else {
           alert(result.message ?? "Failed to deactivate semester.");
         }
@@ -109,6 +110,7 @@ export default function SemesterListPage() {
       const result = await setActiveSemesterAction(row.id);
       if (result.success) {
         await fetchData();
+        window.dispatchEvent(new CustomEvent('academic-data-changed'));
       } else {
         alert(result.message ?? "Failed to set active semester.");
       }
@@ -128,6 +130,7 @@ export default function SemesterListPage() {
       const result = await deleteSemester(row.id);
       if (result.success) {
         await fetchData();
+        window.dispatchEvent(new CustomEvent('academic-data-changed'));
       } else {
         alert(result.message ?? "Failed to delete semester.");
       }

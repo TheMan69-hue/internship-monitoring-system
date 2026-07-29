@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { TextAlignJustify, User } from 'lucide-react';
+import ActiveSchoolYear from '@/components/layout/ActiveSchoolYear';
 import Sidebar from '@/components/sidebar/sidebar';
 import { createClient } from '@/lib/supabase/client';
 
@@ -57,16 +58,19 @@ export default function AdminLayout({
     <div className='flex flex-col h-screen overflow-hidden bg-gray-100'>
       <header className="bg-white w-full border-b-slate-200 border-b-1">
         <div className="flex justify-between items-center px-2">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen((value) => !value)}
-            className="cursor-pointer p-1"
-            aria-expanded={sidebarOpen}
-            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-          >
-            <TextAlignJustify className='text-slate-400' />
-          </button>
-
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen((value) => !value)}
+              className="cursor-pointer p-1"
+              aria-expanded={sidebarOpen}
+              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            >
+              <TextAlignJustify className='text-slate-400' />
+            </button>
+            <ActiveSchoolYear />
+          </div>
+          
           <div className="relative" ref={profileRef}>
             <button
               type="button"

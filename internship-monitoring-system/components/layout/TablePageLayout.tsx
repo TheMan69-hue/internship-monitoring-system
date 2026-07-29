@@ -17,7 +17,7 @@ type TablelayoutProps<T> = {
   searchKeys?: (keyof T)[];
 }
 
-export default function TableLayout<T extends Record<string, unknown>>({
+export default function TableLayout<T extends object>({
   title,
   buttonTitle,
   ButtonIcon,

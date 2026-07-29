@@ -12,7 +12,6 @@ import { getAdminRegistrations } from '@/lib/services/admin/registrations';
 export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState<string>('');
-  const [currentActiveYear, setCurrentActiveYear] = useState<string>('');
   const [Data, setData] = useState<Intern[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,7 +32,6 @@ export default function Dashboard() {
           getAcademicPageData(),
           getAdminRegistrations(),
         ]);
-        setCurrentActiveYear(academicData.activeSchoolYear?.academicYear ?? '');
         setYearOptions(academicData.yearOptions);
         setData(registrations);
       } catch (error) {
@@ -86,7 +84,6 @@ export default function Dashboard() {
     <main className=" flex flex-col flex-1 h-full p-5">
       <div className='flex flex-row justify-between items-center text-black'>
         <h1>Registration List</h1>
-        <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
       </div>
       <div>
         {/* ── Academic Year / Semester Filter ──
@@ -109,6 +106,7 @@ export default function Dashboard() {
           <ReusableTable
             data={pagedData}
             isLoading={isLoading}
+            selectable
             columns={['name', 'email', 'course', 'section', 'status']}
             onRowClick={() => router.push(`/admin/intern`)}
           />

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Student } from "@/lib/types";
 
 type DbStudent = {
@@ -9,8 +9,8 @@ type DbStudent = {
   section: string;
   phone_number: string;
   email_address: string;
-  programs: { program_name: string } | null;
-  sections: { section_name: string } | null;
+  program_info: { program_name: string } | null;
+  section_info: { section_name: string } | null;
   hte_companies: {
     id: string;
     company_name: string;
@@ -22,12 +22,8 @@ type DbStudent = {
   } | null;
 };
 
-export async function getAllStudents(
-  _filters?: { year?: string; semester?: string }
-): Promise<Student[]> {
-  const supabase = createClient();
-
-  let query = supabase
+export async function getAllStudentsServer(): Promise<Student[]> {
+  const { data, error } = await supabaseAdmin
     .from("students")
     .select(`
       id,
@@ -37,9 +33,9 @@ export async function getAllStudents(
       section,
       phone_number,
       email_address,
-      programs:programs(program_name),
-      sections:sections(section_name),
-      hte_companies (
+      program_info:programs(program_name),
+      section_info:sections(section_name),
+      hte_companies!students_hte_id_fkey(
         id,
         company_name,
         address,
@@ -48,13 +44,11 @@ export async function getAllStudents(
         email,
         status
       )
-    `);
-
-  query = query.order("name", { ascending: true });
-
-  const { data, error } = await query;
+    `)
+    .order("name", { ascending: true });
 
   if (error) {
+    console.error("Supabase error (getAllStudentsServer):", error);
     throw error;
   }
 
@@ -62,8 +56,8 @@ export async function getAllStudents(
     id: student.id,
     studentNumber: student.student_number,
     name: student.name,
-    program: student.programs?.program_name ?? student.program ?? "Unknown",
-    section: student.sections?.section_name ?? student.section ?? "Unknown",
+    program: student.program_info?.program_name ?? student.program ?? "Unknown",
+    section: student.section_info?.section_name ?? student.section ?? "Unknown",
     email: student.email_address,
     contactNumber: student.phone_number,
     hte: student.hte_companies

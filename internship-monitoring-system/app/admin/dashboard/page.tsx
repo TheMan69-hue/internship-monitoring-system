@@ -8,16 +8,14 @@ import AuditLog, { AuditLogs } from '@/components/cards/AuditLogCard';
 import { User, Users, Building2, ClipboardCheck } from 'lucide-react';
 import {
   getAdminDashboardStats,
-  getAuditLogs,
   type AdminDashboardStats,
-  type AuditLogEntry,
 } from '@/lib/services/admin/dashboard';
 import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
+import { getAuditLogsAction } from '@/lib/actions/audit-logs';
 
 export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState<string>('');
-  const [currentActiveYear, setCurrentActiveYear] = useState<string>('');
   const [auditData, setAuditData] = useState<AuditLogs[]>([]);
   const [stats, setStats] = useState<AdminDashboardStats>({
     registeredStudents: 0,
@@ -44,18 +42,12 @@ export default function Dashboard() {
       try {
         const [dashboardStats, auditLogs, academicData] = await Promise.all([
           getAdminDashboardStats(),
-          getAuditLogs(),
+          getAuditLogsAction(),
           getAcademicPageData(),
         ]);
 
         setStats(dashboardStats);
-        setAuditData(
-          auditLogs.map((log: AuditLogEntry) => ({
-            ...log,
-            status: log.status ?? '',
-          }))
-        );
-        setCurrentActiveYear(academicData.activeSchoolYear?.academicYear ?? '');
+        setAuditData(auditLogs);
         setYearOptions(academicData.yearOptions);
         // Note: semesterOptions is NOT set here — it will be fetched
         // when the user selects a year via handleYearChange
@@ -97,15 +89,10 @@ export default function Dashboard() {
       const filters = { year, semester };
       const [dashboardStats, auditLogs] = await Promise.all([
         getAdminDashboardStats(filters),
-        getAuditLogs(),
+        getAuditLogsAction(),
       ]);
       setStats(dashboardStats);
-      setAuditData(
-        auditLogs.map((log: AuditLogEntry) => ({
-          ...log,
-          status: log.status ?? '',
-        }))
-      );
+      setAuditData(auditLogs);
     } catch (error) {
       console.error('Error loading filtered data:', error);
     }
@@ -115,7 +102,6 @@ export default function Dashboard() {
     <main className=" flex flex-col flex-1 h-full p-5 overflow-auto">
       <div className='flex flex-row justify-between items-center text-black'>
         <h1>Dashboard</h1>
-        <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
       </div>
       <div>
         {/* ── Academic Year / Semester Filter ──
@@ -173,9 +159,7 @@ export default function Dashboard() {
               value={stats.registeredHTE}
               icon={Building2} />
           </div>
-          <div>
-            <Summary title='Student Summary' data={stats.studentSummary} />
-          </div>
+
         </div>
 
       </div>

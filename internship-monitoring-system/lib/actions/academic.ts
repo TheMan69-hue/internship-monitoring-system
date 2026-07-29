@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { writeAuditLog } from "@/lib/services/admin/audit";
 
 export async function createSchoolYear(data: {
   name: string;
@@ -25,6 +26,9 @@ export async function createSchoolYear(data: {
     if (error) throw error;
 
     revalidatePath("/admin/registration/archive-list");
+
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("create_school_year", { table_name: "school_years", record_id: schoolYear.id, description: `Created school year: ${data.name}` });
 
     return { success: true, data: schoolYear };
   } catch (error) {
@@ -53,6 +57,9 @@ export async function updateSchoolYear(
     if (error) throw error;
 
     revalidatePath("/admin/registration/archive-list");
+
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("update_school_year", { table_name: "school_years", record_id: id, description: `Updated school year` });
 
     return { success: true };
   } catch (error) {
@@ -85,6 +92,9 @@ export async function deleteSchoolYear(id: string) {
     if (error) throw error;
 
     revalidatePath("/admin/registration/archive-list");
+
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("delete_school_year", { table_name: "school_years", record_id: id, description: `Deleted school year` });
 
     return { success: true };
   } catch (error) {
@@ -157,6 +167,9 @@ export async function setActiveSchoolYear(schoolYearId: string) {
     revalidatePath("/admin/registration/archive-list");
     revalidatePath("/admin/dashboard");
 
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("set_active_school_year", { table_name: "school_years", record_id: schoolYearId, description: `Set active school year` });
+
     return { success: true };
   } catch (error) {
     return {
@@ -194,6 +207,9 @@ export async function createSemester(data: {
 
     revalidatePath("/admin/registration/archive-list");
 
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("create_semester", { table_name: "semesters", record_id: semester.id, description: `Created semester: ${data.name}` });
+
     return { success: true, data: semester };
   } catch (error) {
     return {
@@ -222,6 +238,9 @@ export async function updateSemester(
 
     revalidatePath("/admin/registration/archive-list");
 
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("update_semester", { table_name: "semesters", record_id: id, description: `Updated semester` });
+
     return { success: true };
   } catch (error) {
     return {
@@ -246,6 +265,9 @@ export async function deleteSemester(id: string) {
     if (error) throw error;
 
     revalidatePath("/admin/registration/archive-list");
+
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("delete_semester", { table_name: "semesters", record_id: id, description: `Deleted semester` });
 
     return { success: true };
   } catch (error) {
@@ -308,6 +330,9 @@ export async function setActiveSemester(semesterId: string) {
     revalidatePath("/admin/registration/archive-list/semester-list");
     revalidatePath("/admin/dashboard");
 
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("set_active_semester", { table_name: "semesters", record_id: semesterId, description: `Set active semester` });
+
     return { success: true };
   } catch (error) {
     return {
@@ -343,6 +368,9 @@ export async function deactivateSchoolYear(schoolYearId: string) {
     revalidatePath("/admin/registration/archive-list");
     revalidatePath("/admin/registration/archive-list/semester-list");
     revalidatePath("/admin/dashboard");
+
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("deactivate_school_year", { table_name: "school_years", record_id: schoolYearId, description: `Deactivated school year` });
 
     return { success: true };
   } catch (error) {
@@ -388,6 +416,9 @@ export async function deactivateSemester(semesterId: string) {
     revalidatePath("/admin/registration/archive-list");
     revalidatePath("/admin/registration/archive-list/semester-list");
     revalidatePath("/admin/dashboard");
+
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("deactivate_semester", { table_name: "semesters", record_id: semesterId, description: `Deactivated semester` });
 
     return { success: true };
   } catch (error) {

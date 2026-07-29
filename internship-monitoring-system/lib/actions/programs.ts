@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { writeAuditLog } from "@/lib/services/admin/audit";
 
 export async function createProgram(data: {
   program_name: string;
@@ -22,6 +23,9 @@ export async function createProgram(data: {
     if (error) throw error;
 
     revalidatePath("/admin/registration/archive-list/program-list");
+
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("create_program", { table_name: "programs", record_id: program.id, description: `Created program: ${data.program_name}` });
 
     return { success: true, data: program };
   } catch (error) {
@@ -52,6 +56,9 @@ export async function updateProgram(
 
     revalidatePath("/admin/registration/archive-list/program-list");
 
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("update_program", { table_name: "programs", record_id: id, description: `Updated program` });
+
     return { success: true };
   } catch (error) {
     return {
@@ -76,6 +83,9 @@ export async function deleteProgram(id: string) {
     if (error) throw error;
 
     revalidatePath("/admin/registration/archive-list/program-list");
+
+    // Write audit log (FR 3.2.7)
+    await writeAuditLog("delete_program", { table_name: "programs", record_id: id, description: `Deleted program` });
 
     return { success: true };
   } catch (error) {

@@ -168,16 +168,34 @@ export async function getAcademicPageData(): Promise<AcademicPageData> {
   }));
 
   const activeSemester = semesters.find((sem) => sem.is_active);
-  const activeSchoolYear: SchoolYear | null = activeSemester
-    ? {
-        id: activeSemester.id,
-        schoolYearId: activeSemester.school_year_id ?? "",
-        academicYear: schoolYearMap.get(activeSemester.school_year_id ?? "")?.name ?? "",
-        semester: normalizeSemesterName(activeSemester.name),
+  let activeSchoolYear: SchoolYear | null = null;
+
+  if (activeSemester) {
+    // Active semester exists → use it to determine the active school year
+    activeSchoolYear = {
+      id: activeSemester.id,
+      schoolYearId: activeSemester.school_year_id ?? "",
+      academicYear: schoolYearMap.get(activeSemester.school_year_id ?? "")?.name ?? "",
+      semester: normalizeSemesterName(activeSemester.name),
+      is_active: true,
+      status: "active",
+    };
+  } else {
+    // No active semester — check if any school year is marked active
+    const activeYear = schoolYears.find((sy) => sy.is_active);
+    if (activeYear) {
+      activeSchoolYear = {
+        id: activeYear.id,
+        schoolYearId: activeYear.id,
+        academicYear: activeYear.name ?? "Unknown School Year",
+        // semester intentionally omitted → component shows "No Active Semester"
         is_active: true,
         status: "active",
-      }
-    : null;
+        startDate: activeYear.start_date ?? undefined,
+        endDate: activeYear.end_date ?? undefined,
+      };
+    }
+  }
 
   return {
     schoolYears: mappedSchoolYears,

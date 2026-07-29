@@ -21,7 +21,6 @@ export default function Dashboard() {
   // ── Academic Year / Semester Filter State ──
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState<string>('');
-  const [currentActiveYear, setCurrentActiveYear] = useState<string>('');
   const [yearOptions, setYearOptions] = useState<{ value: string; label: string }[]>([]);
   const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
   const [semesterDisabled, setSemesterDisabled] = useState(true);
@@ -54,7 +53,6 @@ export default function Dashboard() {
         ]);
         setData(coordinators);
         setSectionOptions(sections);
-        setCurrentActiveYear(academicData.activeSchoolYear?.academicYear ?? '');
         setYearOptions(academicData.yearOptions);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -122,7 +120,6 @@ export default function Dashboard() {
     <main className="flex flex-col flex-1 h-full p-5">
       <div className='flex flex-row justify-between items-center text-black mb-5'>
         <h1>OJT Coordinator List</h1>
-        <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
       </div>
       <div>
         <YearFilter

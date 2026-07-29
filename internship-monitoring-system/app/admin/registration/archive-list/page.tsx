@@ -129,6 +129,7 @@ export default function Dashboard() {
       try {
         await deactivateSchoolYearAction(String(row.id));
         await fetchData();
+        window.dispatchEvent(new CustomEvent('academic-data-changed'));
       } finally {
         setActionLoading(false);
       }
@@ -147,6 +148,7 @@ export default function Dashboard() {
     try {
       await setActiveSchoolYearAction(String(row.id));
       await fetchData();
+      window.dispatchEvent(new CustomEvent('academic-data-changed'));
     } finally {
       setActionLoading(false);
     }
@@ -164,6 +166,7 @@ export default function Dashboard() {
 
       if (result.success) {
         await fetchData();
+        window.dispatchEvent(new CustomEvent('academic-data-changed'));
       } else {
         alert(result.message ?? 'Failed to delete school year.');
       }
@@ -176,7 +179,6 @@ export default function Dashboard() {
     <main className="flex flex-col flex-1 h-full p-5">
       <div className='flex flex-row justify-between items-center text-black mb-5'>
         <h1>Academic Record List</h1>
-        <h1>{activeSchoolYear?.academicYear || 'No Active Academic Year'}</h1>
       </div>
       <div>
         <TableLayout<SchoolYear> title='Academic Year' buttonTitle='+' showButton={true} data={Data} onClick={() => { setEditData(null); setShowModal(true); }} searchKeys={['academicYear', 'status']}>
