@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { TextAlignJustify, User } from 'lucide-react';
 import ActiveSchoolYear from '@/components/layout/ActiveSchoolYear';
-import Sidebar from '@/components/sidebar/sidebar';
+import SideBar from '@/components/sidebar/AdminSidebar';
 import { createClient } from '@/lib/supabase/client';
 
 export default function AdminLayout({
@@ -104,7 +104,7 @@ export default function AdminLayout({
             sidebarOpen ? 'w-70 translate-x-0' : 'w-0 -translate-x-full'
           }`}
         >
-          <Sidebar />
+          <SideBar/>
         </div>
         <main className="flex-1 overflow-hidden">{children}</main>
       </div>
