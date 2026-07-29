@@ -179,7 +179,7 @@ export default function Dashboard() {
         <h1>{activeSchoolYear?.academicYear || 'No Active Academic Year'}</h1>
       </div>
       <div>
-        <TableLayout<SchoolYear> title='Academic Year' buttonTitle='+' data={Data} onClick={() => { setEditData(null); setShowModal(true); }}>
+        <TableLayout<SchoolYear> title='Academic Year' buttonTitle='+' showButton={true} data={Data} onClick={() => { setEditData(null); setShowModal(true); }} searchKeys={['academicYear', 'status']}>
           {(pagedData) => (
             <ReusableTable
               data={pagedData}

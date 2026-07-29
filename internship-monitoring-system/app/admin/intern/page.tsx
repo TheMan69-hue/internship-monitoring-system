@@ -1,20 +1,20 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Student } from '@/lib/types';
+import { Intern } from '@/lib/types';
 import YearFilter from '@/components/table/YearFilter';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
-import StudentDetailsModal from '@/components/modals/StudentDetailsModal';
-import { getAllStudents } from '@/lib/services/admin/students';
+import Modal from '@/components/modals/Modal';
+import DetailField from '@/components/ui/DetailField';
+import { getAdminRegistrations } from '@/lib/services/admin/registrations';
 import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
 
 export default function InternPage() {
-  const [Data, setData] = useState<Student[]>([]);
+  const [Data, setData] = useState<Intern[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Intern | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   // ── Academic Year / Semester Filter State ──
   const [selectedYear, setSelectedYear] = useState<string>('');
@@ -24,25 +24,16 @@ export default function InternPage() {
   const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
   const [semesterDisabled, setSemesterDisabled] = useState(true);
 
-  const filteredData = searchQuery.trim()
-    ? Data.filter(
-        (student) =>
-          student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          student.studentNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          student.email.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : Data;
-
   // ── Initial Load ──
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [students, academicData] = await Promise.all([
-          getAllStudents(),
+        const [registrations, academicData] = await Promise.all([
+          getAdminRegistrations(),
           getAcademicPageData(),
         ]);
-        setData(students);
+        setData(registrations);
         setCurrentActiveYear(academicData.activeSchoolYear?.academicYear ?? '');
         setYearOptions(academicData.yearOptions);
       } catch (error) {
@@ -77,8 +68,8 @@ export default function InternPage() {
     setIsLoading(true);
     try {
       const filters = { year, semester };
-      const students = await getAllStudents(filters);
-      setData(students);
+      const registrations = await getAdminRegistrations(filters);
+      setData(registrations);
     } catch (error) {
       console.error('Error loading filtered data:', error);
     } finally {
@@ -86,7 +77,7 @@ export default function InternPage() {
     }
   };
 
-  const handleRowClick = (student: Student) => {
+  const handleRowClick = (student: Intern) => {
     setSelectedStudent(student);
     setShowModal(true);
   };
@@ -111,33 +102,29 @@ export default function InternPage() {
           semesterDisabled={semesterDisabled}
         />
       </div>
-      <div className="flex flex-row justify-end mb-3">
-        <input
-          type="text"
-          placeholder="Search by name, number, or email..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-      <TableLayout<Student> title="All Interns" buttonTitle="" data={filteredData} onClick={() => {}}>
+      <TableLayout<Intern> title="All Interns" data={Data} searchKeys={['name', 'email', 'course']}>
         {(pagedData) => (
           <ReusableTable
             data={pagedData}
             isLoading={isLoading}
-            columns={['studentNumber', 'name', 'program', 'section', 'email']}
+            columns={['name', 'email', 'course', 'section', 'status']}
             onRowClick={handleRowClick}
           />
         )}
       </TableLayout>
       {showModal && selectedStudent && (
-        <StudentDetailsModal
-          student={selectedStudent}
-          onClose={() => {
-            setShowModal(false);
-            setSelectedStudent(null);
-          }}
-        />
+        <Modal title="Intern Details" onClose={() => { setShowModal(false); setSelectedStudent(null); }}>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-6 p-6">
+            <DetailField label="Full Name" value={selectedStudent.name} />
+            <DetailField label="Email" value={selectedStudent.email} />
+            <DetailField label="Course" value={selectedStudent.course} />
+            <DetailField label="Section" value={selectedStudent.section} />
+            <DetailField label="Status" value={selectedStudent.status} />
+            <DetailField label="Academic Year" value={selectedStudent.academicYear} />
+            <DetailField label="Semester" value={selectedStudent.semester} />
+            {selectedStudent.hte && <DetailField label="HTE Company" value={selectedStudent.hte} />}
+          </div>
+        </Modal>
       )}
     </main>
   );

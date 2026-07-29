@@ -7,6 +7,7 @@ import ReusableTable from "@/components/table/Table";
 import AddNewProgram from "@/components/modals/AddNewProgram";
 import { createClient } from "@/lib/supabase/client";
 import { deleteProgram } from "@/lib/actions/programs";
+import { ChevronLeft } from 'lucide-react';
 
 type AdminProgram = {
   id: string;
@@ -122,20 +123,22 @@ export default function ProgramListPage() {
 
   return (
     <main className="flex flex-col flex-1 h-full p-5">
-      <div className="flex flex-row justify-between items-center text-black mb-5">
-        <h1>{semesterName} — Programs</h1>
+      <div className="flex flex-row gap-2 items-center text-black mb-5">
         <button
           onClick={() => router.back()}
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-gray-400 hover:text-gray-800"
         >
-          ← Back to Semesters
+          <ChevronLeft />
         </button>
+        <h1>{semesterName} — Programs</h1>        
       </div>
       <TableLayout<AdminProgram>
         title="Programs"
         buttonTitle="+"
+        showButton={true}
         data={Data}
         onClick={handleAddClick}
+        searchKeys={['name']}
       >
         {(pagedData) => (
           <ReusableTable

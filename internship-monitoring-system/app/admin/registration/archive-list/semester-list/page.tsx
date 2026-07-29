@@ -6,6 +6,7 @@ import TableLayout from "@/components/layout/TablePageLayout";
 import ReusableTable from "@/components/table/Table";
 import AddNewSemester from "@/components/modals/AddNewSemester";
 import { createClient } from "@/lib/supabase/client";
+import { ChevronLeft } from 'lucide-react';
 import {
   deleteSemester,
   setActiveSemester as setActiveSemesterAction,
@@ -147,20 +148,22 @@ export default function SemesterListPage() {
 
   return (
     <main className="flex flex-col flex-1 h-full p-5">
-      <div className="flex flex-row justify-between items-center text-black mb-5">
-        <h1>{schoolYearName} — Semesters</h1>
+      <div className="flex flex-row gap-2 items-center text-black mb-5">
         <button
           onClick={() => router.back()}
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-gray-400 hover:text-gray-800"
         >
-          ← Back to Academic Records
+          <ChevronLeft />
         </button>
+        <h1>{schoolYearName} — Semesters</h1>
       </div>
       <TableLayout<SemesterRow>
         title="Semesters"
         buttonTitle="+"
+        showButton={true}
         data={Data}
         onClick={handleAdd}
+        searchKeys={['name', 'status']}
       >
         {(pagedData) => (
           <ReusableTable

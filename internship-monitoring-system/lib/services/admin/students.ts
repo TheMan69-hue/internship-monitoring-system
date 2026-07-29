@@ -70,6 +70,8 @@ export async function getAllStudents(
 
   query = query.order("name", { ascending: true });
 
+  const { data, error } = await query;
+
   if (error) {
     throw error;
   }

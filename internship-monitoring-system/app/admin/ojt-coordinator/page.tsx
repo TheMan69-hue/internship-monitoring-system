@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Coordinator } from '@/lib/types';
 import YearFilter from '@/components/table/YearFilter';
 import TableLayout from '@/components/layout/TablePageLayout';
@@ -8,11 +8,7 @@ import ReusableTable from '@/components/table/Table';
 import AddNewCoordinator from '@/components/modals/AddNewCoordinator';
 import { getCoordinators, getSectionOptions } from '@/lib/services/admin/coordinators';
 import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
-import {
-  createCoordinator,
-  updateCoordinator,
-  deleteCoordinator,
-} from '@/lib/actions/coordinators';
+import { deleteCoordinator } from '@/lib/actions/coordinators';
 
 export default function Dashboard() {
   const [Data, setData] = useState<Coordinator[]>([]);
@@ -30,7 +26,7 @@ export default function Dashboard() {
   const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
   const [semesterDisabled, setSemesterDisabled] = useState(true);
 
-  const fetchData = async (year?: string, semester?: string) => {
+  const fetchData = useCallback(async (year?: string, semester?: string) => {
     setIsLoading(true);
     try {
       const filters = year ? { year, semester } : undefined;
@@ -45,7 +41,7 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -92,49 +88,6 @@ export default function Dashboard() {
     await fetchData(year, semester);
   };
 
-  const handleAdd = async (newData: Omit<Coordinator, 'id' | 'password'> & { id?: string; sections?: string[]; password?: string }) => {
-    setActionLoading(true);
-    try {
-      const result = await createCoordinator({
-        name: newData.name,
-        email: newData.email,
-        contact_num: newData.contact_num,
-        password: newData.password ?? '',
-        section_ids: newData.sections ?? [],
-      });
-
-      if (result.success) {
-        await fetchData();
-      } else {
-        alert(result.message ?? 'Failed to create coordinator.');
-      }
-    } finally {
-      setActionLoading(false);
-      setEditData(null);
-    }
-  };
-
-  const handleEdit = async (newData: Omit<Coordinator, 'id' | 'password'> & { id?: string; sections?: string[]; password?: string }) => {
-    if (!newData.id) return;
-    setActionLoading(true);
-    try {
-      const result = await updateCoordinator(String(newData.id), {
-        name: newData.name,
-        contact_num: newData.contact_num,
-        section_ids: newData.sections,
-      });
-
-      if (result.success) {
-        await fetchData();
-      } else {
-        alert(result.message ?? 'Failed to update coordinator.');
-      }
-    } finally {
-      setActionLoading(false);
-      setEditData(null);
-    }
-  };
-
   const handleDelete = async (row: Coordinator) => {
     const confirmDelete = window.confirm(
       `Are you sure you want to delete "${row.name}"? This action cannot be undone.`
@@ -156,16 +109,17 @@ export default function Dashboard() {
   };
 
   const handleEditClick = (row: Coordinator) => {
-    const confirmEdit = window.confirm(
-      `Are you sure you want to edit "${row.name}"?`
-    );
-    if (!confirmEdit) return;
     setEditData(row);
     setShowModal(true);
   };
 
+  const handleAddClick = () => {
+    setEditData(null);
+    setShowModal(true);
+  };
+
   return (
-    <main className=" flex flex-col flex-1 h-full p-5">
+    <main className="flex flex-col flex-1 h-full p-5">
       <div className='flex flex-row justify-between items-center text-black mb-5'>
         <h1>OJT Coordinator List</h1>
         <h1>{yearOptions.find(opt => opt.value === currentActiveYear)?.label || 'No Active Academic Year'}</h1>
@@ -184,7 +138,7 @@ export default function Dashboard() {
           semesterDisabled={semesterDisabled}
         />
       </div>
-      <TableLayout<Coordinator> title='Coordinator List' buttonTitle='+' data={Data} onClick={() => { setEditData(null); setShowModal(true); }}>
+      <TableLayout<Coordinator> title='Coordinator List' buttonTitle='+' showButton={true} data={Data} onClick={handleAddClick} searchKeys={['name', 'email', 'contact_num']}>
         {(pagedData) => (
           <ReusableTable
             data={pagedData}
@@ -202,7 +156,10 @@ export default function Dashboard() {
         <AddNewCoordinator
           key={editData?.id ?? 'new'}
           show={showModal}
-          onSubmit={editData ? handleEdit : handleAdd}
+          onSuccess={() => {
+            fetchData();
+            setEditData(null);
+          }}
           editData={editData}
           sectionOptions={sectionOptions}
           onClose={() => {

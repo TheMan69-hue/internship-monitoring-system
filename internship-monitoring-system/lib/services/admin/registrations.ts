@@ -48,6 +48,8 @@ export async function getAdminRegistrations(
 
   query = query.order("created_at", { ascending: false });
 
+  const { data, error } = await query;
+
   if (error) {
     throw error;
   }

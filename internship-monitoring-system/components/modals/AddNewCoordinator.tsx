@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '@/components/modals/Modal';
 import Button from '@/components/buttons/buttons';
 import MultiSelectDropdown from '@/components/buttons/MultiSelectDropdown';
 import { Coordinator } from '@/lib/types';
+import { createCoordinator, updateCoordinator } from '@/lib/actions/coordinators';
 
 interface AddNewCoordinatorProps {
   show: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<Coordinator, 'id' | 'password'> & { id?: string; sections?: string[]; password?: string }) => void;
+  onSuccess: () => void;
   editData?: (Coordinator & { sections?: string[] }) | null;
   sectionOptions?: { id: string; name: string }[];
 }
@@ -17,25 +18,49 @@ interface AddNewCoordinatorProps {
 export default function AddNewCoordinator({
   show,
   onClose,
-  onSubmit,
+  onSuccess,
   editData,
   sectionOptions = [],
 }: AddNewCoordinatorProps) {
-  const [name, setName] = useState(editData?.name || '');
-  const [email, setEmail] = useState(editData?.email || '');
-  const [contact, setContact] = useState(editData?.contact_num || '');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [contact, setContact] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [confirmError, setConfirmError] = useState('');
   const [changePassword, setChangePassword] = useState(false);
-  const [selectedSections, setSelectedSections] = useState<string[]>(
-    editData?.sections || []
-  );
+  const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [error, setError] = useState('');
+
+  // Initialize form when editData changes
+  useEffect(() => {
+    const initForm = () => {
+      if (editData) {
+        setName(editData.name ?? '');
+        setEmail(editData.email ?? '');
+        setContact(editData.contact_num ?? '');
+        setSelectedSections(editData.sections ?? []);
+        setPassword('');
+        setConfirmPassword('');
+        setChangePassword(false);
+      } else {
+        setName('');
+        setEmail('');
+        setContact('');
+        setPassword('');
+        setConfirmPassword('');
+        setChangePassword(false);
+        setSelectedSections([]);
+      }
+      setError('');
+      setConfirmError('');
+    };
+    setTimeout(initForm, 0);
+  }, [editData]);
 
   if (!show) return null;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim()) {
       setError('Name is required.');
       return;
@@ -48,7 +73,6 @@ export default function AddNewCoordinator({
       setError('Contact number is required.');
       return;
     }
-    // Password validation
     if (!editData && !password) {
       setError('Password is required.');
       return;
@@ -65,20 +89,34 @@ export default function AddNewCoordinator({
     }
 
     setError('');
-    const submitData: Omit<Coordinator, 'id' | 'password'> & { id?: string; sections?: string[]; password?: string } = {
-      ...(editData && { id: editData.id }),
-      name: name.trim(),
-      email: email.trim(),
-      contact_num: contact.trim(),
-      role: 'coordinator',
-      is_active: editData?.is_active ?? false,
-      sections: selectedSections,
-    };
-    if (password) {
-      submitData.password = password;
+
+    try {
+      let result;
+      if (editData) {
+        result = await updateCoordinator(editData.id, {
+          name: name.trim(),
+          contact_num: contact.trim(),
+          section_ids: selectedSections,
+        });
+      } else {
+        result = await createCoordinator({
+          name: name.trim(),
+          email: email.trim(),
+          contact_num: contact.trim(),
+          password,
+          section_ids: selectedSections,
+        });
+      }
+
+      if (result.success) {
+        onSuccess();
+        onClose();
+      } else {
+        setError(result.message ?? 'Failed to save coordinator.');
+      }
+    } catch {
+      setError('An unexpected error occurred.');
     }
-    onSubmit(submitData);
-    onClose();
   };
 
   return (

@@ -104,7 +104,7 @@ export default function Dashboard() {
           semesterDisabled={semesterDisabled}
         />
       </div>
-      <TableLayout<Intern> title='Student List' buttonTitle='+' data={Data} onClick={() => {}}>
+      <TableLayout<Intern> title='Student List' data={Data} searchKeys={['name', 'email', 'course', 'section']}>
         {(pagedData) => (
           <ReusableTable
             data={pagedData}

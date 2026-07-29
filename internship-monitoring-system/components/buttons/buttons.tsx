@@ -2,10 +2,10 @@ import { ReactNode } from 'react';
 
 interface ButtonProps {
   icon?: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
   onClick?: (e: React.MouseEvent) => void;
   type?: 'button' | 'submit' | 'reset';
-  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline';
+  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline' | 'circle';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   className?: string;
@@ -18,6 +18,7 @@ const variantStyles = {
   danger: 'bg-red-500 hover:bg-red-600 text-white',
   success: 'bg-blue-500 hover:bg-blue-600 text-white',
   outline: 'border-2 border-blue-500 text-blue-500 hover:bg-blue-50',
+  circle: 'rounded-full border-2 border-gray-600 hover:bg-gray-300 w-10 h-10 p-0 flex items-center justify-center',
 };
 
 const sizeStyles = {
