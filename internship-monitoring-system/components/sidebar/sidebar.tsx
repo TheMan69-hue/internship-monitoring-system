@@ -9,8 +9,7 @@ import { LayoutDashboard,
           UserStar, 
           FileUser, 
           ChevronDown,
-          LogOut,
-          Building2 
+          LogOut
         } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -26,13 +25,12 @@ const adminRoutes: AdminRoute[] = [
   {
     label: 'Registration', icon: <UserPlus/>,
     children: [
-      { label: 'Academic Records', href: '/admin/registration/archive-list', icon: <FileUser/> },
+      { label: 'Archive List', href: '/admin/registration/archive-list', icon: <FileUser/> },
       { label: 'Registration List', href: '/admin/registration/registration-list', icon: <FileUser/> },
     ],
   },
   { label: 'Intern', href: '/admin/intern', icon: <Users/> },
   { label: 'OJT Coordinator', href: '/admin/ojt-coordinator', icon: <UserStar/> },
-  { label: 'HTE Management', href: '/admin/hte-management', icon: <Building2/> },
 ];
 
 export default function Sidebar() {
