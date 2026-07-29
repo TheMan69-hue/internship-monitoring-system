@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react' 
-import { supabase } from '../../supabaseClient' 
+import { useState, useEffect } from 'react'
+import { supabase } from '../../supabaseClient'
 import './ProfileSettings.css'
 
 const avatarPath =
@@ -57,12 +57,68 @@ function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout
   const [editingField, setEditingField] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const [activeSemester, setActiveSemester] = useState(null)
 
-  
+  useEffect(() => {
+    const fetchActiveSemester = async () => {
+      try {
+        // 1. Query semesters directly (avoids PostgREST join failure)
+        const { data: semData, error: semError } = await supabase
+          .from('semesters')
+          .select('id, name, start_date, school_year_id')
+          .eq('is_active', true)
+          .maybeSingle()
+
+        if (semError) {
+          console.error('❌ [Semesters Query Error]:', semError.message)
+          return
+        }
+
+        if (!semData) {
+          console.warn('⚠️ [Semesters]: No row found with is_active = true')
+          return
+        }
+
+        // 2. Extract year directly from start_date string (e.g., '2025-06-01' -> '2025')
+        let dynamicYear = semData.start_date ? String(semData.start_date).split('-')[0] : ''
+
+        // 3. Try fetching school_years table if school_year_id exists
+        if (semData.school_year_id) {
+          const { data: syData, error: syError } = await supabase
+            .from('school_years')
+            .select('*')
+            .eq('id', semData.school_year_id)
+            .maybeSingle()
+
+          if (!syError && syData) {
+            // Check common column names in school_years table
+            dynamicYear = syData.year || syData.name || syData.school_year || dynamicYear
+          } else if (syError) {
+            console.warn('⚠️ [School Years RLS/Query Error]:', syError.message)
+          }
+        }
+
+        // Format name (e.g. 'midyear' -> 'Midyear')
+        const formattedName = semData.name
+          ? String(semData.name).charAt(0).toUpperCase() + String(semData.name).slice(1)
+          : ''
+
+        setActiveSemester({
+          name: formattedName,
+          year: dynamicYear,
+        })
+      } catch (err) {
+        console.error('❌ [fetchActiveSemester Exception]:', err)
+      }
+    }
+
+    fetchActiveSemester()
+  }, [])
+
   useEffect(() => {
     const fetchHteDetails = async () => {
-      const studentHteName = typeof studentProfile.hte === 'object' 
-        ? studentProfile.hte?.name 
+      const studentHteName = typeof studentProfile.hte === 'object'
+        ? studentProfile.hte?.name
         : studentProfile.hte
 
       if (!studentHteName) return
@@ -259,66 +315,70 @@ function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout
           </div>
           <div className="profile-header-meta">
             <span>Academic Year</span>
-            <strong>Midyear 2026</strong>
+            <strong>
+              {activeSemester
+                ? `${(activeSemester.name || '').charAt(0).toUpperCase() + (activeSemester.name || '').slice(1)} ${activeSemester.school_years?.year || ''}`
+                : '-'}
+            </strong>
           </div>
         </header>
 
         <div className="profile-settings-content">
-        <div className="profile-detail-card">
-          <h2>{isProfilePanel ? 'Profile Details' : 'HTE Details'}</h2>
-          {isProfilePanel ? (
-            <form className="profile-detail-form" onSubmit={handleSave}>
-              <div className="profile-detail-list profile-detail-list--profile" aria-label="Profile details">
-                <DetailRow label="Student Number" value={studentProfile.studentNumber} />
-                <DetailRow label="Program" value={studentProfile.program} />
-                <DetailRow label="Section" value={studentProfile.section} />
-                {editableRows.map((row) => (
-                  <EditableField
-                    key={row.name}
-                    label={row.label}
-                    name={row.name}
-                    value={row.value}
-                    type={row.type}
-                    onChange={handleFieldChange}
-                    onEdit={() => setEditingField(row.name)}
-                    isEditing={editingField === row.name}
-                  />
-                ))}
-              </div>
+          <div className="profile-detail-card">
+            <h2>{isProfilePanel ? 'Profile Details' : 'HTE Details'}</h2>
+            {isProfilePanel ? (
+              <form className="profile-detail-form" onSubmit={handleSave}>
+                <div className="profile-detail-list profile-detail-list--profile" aria-label="Profile details">
+                  <DetailRow label="Student Number" value={studentProfile.studentNumber} />
+                  <DetailRow label="Program" value={studentProfile.program} />
+                  <DetailRow label="Section" value={studentProfile.section} />
+                  {editableRows.map((row) => (
+                    <EditableField
+                      key={row.name}
+                      label={row.label}
+                      name={row.name}
+                      value={row.value}
+                      type={row.type}
+                      onChange={handleFieldChange}
+                      onEdit={() => setEditingField(row.name)}
+                      isEditing={editingField === row.name}
+                    />
+                  ))}
+                </div>
 
-              <div className="profile-actions">
-                <button type="submit" className="profile-save" disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save Changes'}
-                </button>
-                {saveMessage ? <p className="profile-save-status" role="status">{saveMessage}</p> : null}
-              </div>
-            </form>
-          ) : (
-            <form className="profile-detail-form" onSubmit={handleHteSave}>
-              <div className="profile-detail-list profile-detail-list--profile" aria-label="HTE details">
-                {hteEditableRows.map((row) => (
-                  <EditableField
-                    key={row.name}
-                    label={row.label}
-                    name={row.name}
-                    value={row.value}
-                    type={row.type}
-                    onChange={handleHteFieldChange}
-                    onEdit={() => setEditingField(row.name)}
-                    isEditing={editingField === row.name}
-                  />
-                ))}
-              </div>
+                <div className="profile-actions">
+                  <button type="submit" className="profile-save" disabled={isSaving}>
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  {saveMessage ? <p className="profile-save-status" role="status">{saveMessage}</p> : null}
+                </div>
+              </form>
+            ) : (
+              <form className="profile-detail-form" onSubmit={handleHteSave}>
+                <div className="profile-detail-list profile-detail-list--profile" aria-label="HTE details">
+                  {hteEditableRows.map((row) => (
+                    <EditableField
+                      key={row.name}
+                      label={row.label}
+                      name={row.name}
+                      value={row.value}
+                      type={row.type}
+                      onChange={handleHteFieldChange}
+                      onEdit={() => setEditingField(row.name)}
+                      isEditing={editingField === row.name}
+                    />
+                  ))}
+                </div>
 
-              <div className="profile-actions">
-                <button type="submit" className="profile-save" disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save Changes'}
-                </button>
-                {saveMessage ? <p className="profile-save-status" role="status">{saveMessage}</p> : null}
-              </div>
-            </form>
-          )}
-        </div>
+                <div className="profile-actions">
+                  <button type="submit" className="profile-save" disabled={isSaving}>
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  {saveMessage ? <p className="profile-save-status" role="status">{saveMessage}</p> : null}
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       </section>
     </main>
