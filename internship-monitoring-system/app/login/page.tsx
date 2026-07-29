@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [password,setPassword] = useState("");
 
   const [error,setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
 
 
@@ -24,6 +25,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     setError("");
+    setLoading(true);
 
 
 
@@ -41,7 +43,11 @@ export default function LoginPage() {
 
    if(error){
 
-        setError(error.message);
+        if (error.message === "Invalid login credentials") {
+          setError("Incorrect email or password.");
+        } else {
+          setError("Unable to sign in. Please try again.");
+        }
 
         return;
 
@@ -61,21 +67,43 @@ export default function LoginPage() {
         console.log("SESSION:", session);
 
 
-        if(!session){
+        if (!session) {
 
-        setError("Session was not created");
+          setError("Session was not created.");
 
-        return;
+          setLoading(false);
 
+          return;
+
+      }
+
+
+        // Get user's profile
+        const {
+          data: profile,
+          error: profileError,
+        } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (profileError || !profile) {
+            setError("Profile not found.");
+            setLoading(false);
+            return;
         }
-
-
-        // Refresh Next.js server so it receives the auth cookie
 
         router.refresh();
 
-
-        router.push("/coordinator/dashboard");
+        if (profile.role === "admin") {
+          router.push("/admin/dashboard");
+        } else if (profile.role === "coordinator") {
+          router.push("/coordinator/dashboard");
+        } else {
+            setError("This login is only for administrators and coordinators.");
+            setLoading(false);
+        }
 
   }
 
@@ -123,9 +151,10 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          className="rounded bg-black p-2 text-white"
+          disabled={loading}
+          className="rounded bg-black p-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Login
+          {loading ? "Signing in..." : "Login"}
         </button>
 
 
