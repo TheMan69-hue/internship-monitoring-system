@@ -138,7 +138,6 @@ export default function Dashboard() {
           <ReusableTable
             data={pagedData}
             isLoading={isLoading}
-            selectable
             columns={['name', 'email', 'course', 'section', 'status']}
             onRowClick={() => router.push(`/admin/intern`)}
           />

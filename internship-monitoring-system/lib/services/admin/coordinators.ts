@@ -8,7 +8,7 @@ export async function getCoordinators(
 
   let query = supabase
     .from("coordinators")
-    .select("id, profile_id, employee_number, department, created_at");
+    .select("id, profile_id, employee_number, department, is_active, created_at");
 
   // NOTE: coordinators table doesn't have school_year_id/semester_id columns yet.
   // Uncomment these once those columns exist:
@@ -72,7 +72,7 @@ export async function getCoordinators(
       contact_num: coordinator.employee_number ?? coordinator.department ?? "",
       role: "coordinator",
       password: "",
-      is_active: true,
+      is_active: coordinator.is_active ?? false,
       created_at: coordinator.created_at ?? undefined,
       sections: sectionsByCoordinator.get(coordinator.id) ?? [],
     } satisfies Coordinator;

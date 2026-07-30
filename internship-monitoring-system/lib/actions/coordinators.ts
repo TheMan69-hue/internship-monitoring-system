@@ -5,11 +5,21 @@ import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { writeAuditLog } from "@/lib/services/admin/audit";
 
+/**
+ * Generates a cryptographically random alphanumeric string of the given length.
+ * Uses the Web Crypto API (available globally in Node.js 19+).
+ */
+function generateTempPassword(length = 12): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const array = new Uint8Array(length);
+  globalThis.crypto.getRandomValues(array);
+  return Array.from(array, (byte) => chars[byte % chars.length]).join("");
+}
+
 export async function createCoordinator(data: {
   name: string;
   email: string;
   contact_num: string;
-  password: string;
   section_ids: string[];
 }) {
   try {
@@ -61,10 +71,13 @@ export async function createCoordinator(data: {
 
     // === All validations passed, proceed with creation ===
 
+    // FR-3.1.12: Auto-generate a temporary password using Web Crypto API
+    const tempPassword = generateTempPassword();
+
     const { data: authData, error: authError } =
       await supabaseAdmin.auth.admin.createUser({
         email: data.email,
-        password: data.password,
+        password: tempPassword,
         email_confirm: true,
         user_metadata: { display_name: data.name, full_name: data.name },
       });
@@ -85,12 +98,14 @@ export async function createCoordinator(data: {
 
     if (profileError) throw profileError;
 
+    // FR-3.1.14: Account starts in inactive state
     const { data: coordinator, error: coordinatorError } = await supabase
       .from("coordinators")
       .insert({
         profile_id: profile.id,
         employee_number: data.contact_num,
         department: null,
+        is_active: false,
       })
       .select()
       .single();
@@ -127,7 +142,8 @@ export async function createCoordinator(data: {
 
     revalidatePath("/admin/ojt-coordinator");
 
-    return { success: true };
+    // Return the temp password so the UI can display it once (FR-3.1.13)
+    return { success: true, tempPassword };
   } catch (error) {
     console.error("createCoordinator error:", error);
     const message =
@@ -329,6 +345,133 @@ export async function deleteCoordinator(coordinatorId: string) {
         : typeof error === "object" && error !== null
           ? JSON.stringify(error)
           : "Failed to delete coordinator.";
+    return { success: false, message };
+  }
+}
+
+/**
+ * Resets a coordinator's password to a new auto-generated temporary password.
+ * Sets is_active = false so they must complete the force-change flow again.
+ * Returns the temp password for one-time display to the admin.
+ */
+export async function resetCoordinatorPassword(coordinatorId: string) {
+  try {
+    const supabase = await createClient();
+
+    // Fetch coordinator + profile (include user_id for auth update)
+    const { data: coordinator, error: fetchError } = await supabase
+      .from("coordinators")
+      .select("id, profile_id")
+      .eq("id", coordinatorId)
+      .single();
+
+    if (fetchError || !coordinator) {
+      return { success: false, message: "Coordinator not found." };
+    }
+
+    const { data: profile, error: profileFetchError } = await supabase
+      .from("profiles")
+      .select("id, user_id")
+      .eq("id", coordinator.profile_id)
+      .single();
+
+    if (profileFetchError || !profile) {
+      return { success: false, message: "Profile not found." };
+    }
+
+    // Generate new temp password
+    const newPassword = generateTempPassword();
+
+    // Update auth password via admin API
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+      profile.user_id,
+      { password: newPassword }
+    );
+    if (authError) throw authError;
+
+    // Reset is_active to false
+    const { error: updateError } = await supabase
+      .from("coordinators")
+      .update({ is_active: false })
+      .eq("id", coordinatorId);
+
+    if (updateError) throw updateError;
+
+    await writeAuditLog("reset_coordinator_password", {
+      table_name: "coordinators",
+      record_id: coordinatorId,
+      description: "Coordinator password was reset by admin",
+    });
+
+    return { success: true, tempPassword: newPassword };
+  } catch (error) {
+    console.error("resetCoordinatorPassword error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null
+          ? JSON.stringify(error)
+          : "Failed to reset coordinator password.";
+    return { success: false, message };
+  }
+}
+
+/**
+ * Generates a new temporary password for a coordinator WITHOUT deactivating
+ * their account. Unlike resetCoordinatorPassword, this does NOT set
+ * is_active = false, so the coordinator can continue working without
+ * being forced to change their password on next login.
+ * Returns the temp password for one-time display to the admin.
+ */
+export async function regenerateCoordinatorPassword(coordinatorId: string) {
+  try {
+    const supabase = await createClient();
+
+    const { data: coordinator, error: fetchError } = await supabase
+      .from("coordinators")
+      .select("id, profile_id")
+      .eq("id", coordinatorId)
+      .single();
+
+    if (fetchError || !coordinator) {
+      return { success: false, message: "Coordinator not found." };
+    }
+
+    const { data: profile, error: profileFetchError } = await supabase
+      .from("profiles")
+      .select("id, user_id")
+      .eq("id", coordinator.profile_id)
+      .single();
+
+    if (profileFetchError || !profile) {
+      return { success: false, message: "Profile not found." };
+    }
+
+    // Generate new temp password
+    const newPassword = generateTempPassword();
+
+    // Update auth password via admin API only — no is_active change
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+      profile.user_id,
+      { password: newPassword }
+    );
+    if (authError) throw authError;
+
+    await writeAuditLog("regenerate_coordinator_password", {
+      table_name: "coordinators",
+      record_id: coordinatorId,
+      description: "Coordinator password was regenerated by admin (no deactivation)",
+    });
+
+    return { success: true, tempPassword: newPassword };
+  } catch (error) {
+    console.error("regenerateCoordinatorPassword error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null
+          ? JSON.stringify(error)
+          : "Failed to regenerate coordinator password.";
     return { success: false, message };
   }
 }
