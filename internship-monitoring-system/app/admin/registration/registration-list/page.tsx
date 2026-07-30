@@ -23,26 +23,37 @@ export default function Dashboard() {
   const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
   const [semesterDisabled, setSemesterDisabled] = useState(true);
 
-  // ── Initial Load: Fetch academic year options and all registrations ──
+  // ── Initial Load: Single-pass fetch ──
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [academicData, registrations] = await Promise.all([
-          getAcademicPageData(),
-          getAdminRegistrations(),
-        ]);
+        // Step 1: get academic data first to know the active period
+        const academicData = await getAcademicPageData();
         setYearOptions(academicData.yearOptions);
+
+        const active = academicData.activeSchoolYear;
+        let year = '';
+        let semester = '';
+
+        if (active && active.schoolYearId && active.id) {
+          year = String(active.schoolYearId);
+          semester = String(active.id);
+          setSelectedYear(year);
+          setSelectedSemester(semester);
+        }
+
+        // Step 2: single batch — only ONE registrations call
+        const filters = year ? { year, semester } : undefined;
+        const [registrations, semesterOpts] = await Promise.all([
+          getAdminRegistrations(filters),
+          year ? getSemestersBySchoolYear(year) : Promise.resolve([]),
+        ]);
+
         setData(registrations);
 
-        // Auto-select active school year and semester
-        const active = academicData.activeSchoolYear;
-        if (active && active.schoolYearId && active.id) {
-          setSelectedYear(String(active.schoolYearId));
-          setSelectedSemester(String(active.id));
-
-          const semesters = await getSemestersBySchoolYear(String(active.schoolYearId));
-          setSemesterOptions(semesters);
+        if (semesterOpts.length > 0) {
+          setSemesterOptions(semesterOpts);
           setSemesterDisabled(false);
         }
       } catch (error) {
@@ -79,8 +90,18 @@ export default function Dashboard() {
   // Re-fetches registration data filtered by the selected year+semester.
   const handleLoad = async (year: string, semester: string) => {
     if (!year || !semester) return;
+
+    // ── Module reset: clear data before re-fetching ──
+    setData([]);
     setIsLoading(true);
+
     try {
+      // ── Refresh reference data ──
+      const semesterOpts = await getSemestersBySchoolYear(year);
+      setSemesterOptions(semesterOpts);
+      setSemesterDisabled(false);
+
+      // ── Re-fetch main data with filters ──
       const filters = { year, semester };
       const registrations = await getAdminRegistrations(filters);
       setData(registrations);

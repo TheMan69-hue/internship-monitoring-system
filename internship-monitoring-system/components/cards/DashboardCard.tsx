@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { LucideIcon } from "lucide-react";
 
 type DashboardCardProps = {
@@ -6,7 +7,7 @@ type DashboardCardProps = {
   icon: LucideIcon;
 };
 
-export default function DashboardCard({
+function DashboardCard({
   title,
   value,
   icon: Icon,
@@ -34,3 +35,5 @@ export default function DashboardCard({
     </div>
   );
 }
+
+export default memo(DashboardCard);

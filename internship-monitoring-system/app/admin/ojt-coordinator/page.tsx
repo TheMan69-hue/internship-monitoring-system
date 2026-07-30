@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { Coordinator } from '@/lib/types';
 import YearFilter from '@/components/table/YearFilter';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
-import AddNewCoordinator from '@/components/modals/AddNewCoordinator';
+
+const AddNewCoordinator = dynamic(() => import('@/components/modals/AddNewCoordinator'), { ssr: false });
 import { getCoordinators, getSectionOptions } from '@/lib/services/admin/coordinators';
 import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
 import { deleteCoordinator } from '@/lib/actions/coordinators';
@@ -46,23 +48,34 @@ export default function Dashboard() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [coordinators, sections, academicData] = await Promise.all([
-          getCoordinators(),
-          getSectionOptions(),
-          getAcademicPageData(),
-        ]);
-        setData(coordinators);
-        setSectionOptions(sections);
+        // Step 1: get academic data first to know the active period
+        const academicData = await getAcademicPageData();
         setYearOptions(academicData.yearOptions);
 
-        // Auto-select active school year and semester
         const active = academicData.activeSchoolYear;
-        if (active && active.schoolYearId && active.id) {
-          setSelectedYear(String(active.schoolYearId));
-          setSelectedSemester(String(active.id));
+        let year = '';
+        let semester = '';
 
-          const semesters = await getSemestersBySchoolYear(String(active.schoolYearId));
-          setSemesterOptions(semesters);
+        if (active && active.schoolYearId && active.id) {
+          year = String(active.schoolYearId);
+          semester = String(active.id);
+          setSelectedYear(year);
+          setSelectedSemester(semester);
+        }
+
+        // Step 2: single batch
+        const filters = year ? { year, semester } : undefined;
+        const [coordinators, sections, semesterOpts] = await Promise.all([
+          getCoordinators(filters),
+          getSectionOptions(),
+          year ? getSemestersBySchoolYear(year) : Promise.resolve([]),
+        ]);
+
+        setData(coordinators);
+        setSectionOptions(sections);
+
+        if (semesterOpts.length > 0) {
+          setSemesterOptions(semesterOpts);
           setSemesterDisabled(false);
         }
       } catch (error) {
@@ -94,15 +107,27 @@ export default function Dashboard() {
 
   const handleLoad = async (year: string, semester: string) => {
     if (!year || !semester) return;
+
+    // ── Module reset: close modals, clear selections ──
+    setShowModal(false);
+    setEditData(null);
+    setActionLoading(false);
     setIsLoading(true);
+
     try {
-      const filters = { year, semester };
-      const [coordinators, sections] = await Promise.all([
-        getCoordinators(filters),
+      // ── Refresh reference data ──
+      const [semesterOpts, sections] = await Promise.all([
+        getSemestersBySchoolYear(year),
         getSectionOptions(),
       ]);
-      setData(coordinators);
+      setSemesterOptions(semesterOpts);
+      setSemesterDisabled(false);
       setSectionOptions(sections);
+
+      // ── Re-fetch main data with filters ──
+      const filters = { year, semester };
+      const coordinators = await getCoordinators(filters);
+      setData(coordinators);
     } catch (error) {
       console.error('Error loading filtered data:', error);
     } finally {

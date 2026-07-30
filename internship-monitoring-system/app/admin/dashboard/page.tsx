@@ -33,48 +33,43 @@ export default function Dashboard() {
   const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
   const [semesterDisabled, setSemesterDisabled] = useState(true);
 
-  // ── Initial Load: Fetch all data needed for the dashboard ──
-  // Runs once on component mount. Gets dashboard stats, audit logs,
-  // and academic year options for the filter dropdown.
-  // Auto-selects the active school year and semester.
+  // ── Initial Load: Single-pass fetch ──
+  // 1. Resolve academic data to find the active semester
+  // 2. Make ONE stats call (filtered if active, unfiltered otherwise)
+  // No double-fetch, no flash of overall stats before filtering.
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [dashboardStats, auditLogs, academicData] = await Promise.all([
-          getAdminDashboardStatsAction(),
+        // Step 1: get academic data first to know the active period
+        const academicData = await getAcademicPageData();
+        setYearOptions(academicData.yearOptions);
+
+        const active = academicData.activeSchoolYear;
+        let filters: { year: string; semester: string } | undefined;
+        let year = '';
+        let semester = '';
+
+        if (active && active.schoolYearId && active.id) {
+          year = String(active.schoolYearId);
+          semester = String(active.id);
+          setSelectedYear(year);
+          setSelectedSemester(semester);
+          filters = { year, semester };
+        }
+
+        // Step 2: single batch of parallel requests
+        const [dashboardStats, auditLogs, semesterOpts] = await Promise.all([
+          getAdminDashboardStatsAction(filters),
           getAuditLogsAction(),
-          getAcademicPageData(),
+          year ? getSemestersBySchoolYear(year) : Promise.resolve([]),
         ]);
 
         setStats(dashboardStats);
         setAuditData(auditLogs);
-        setYearOptions(academicData.yearOptions);
 
-        // Auto-select active school year and semester
-        const active = academicData.activeSchoolYear;
-        if (active && active.schoolYearId && active.id) {
-          setSelectedYear(String(active.schoolYearId));
-          setSelectedSemester(String(active.id));
-
-          // Fetch semesters for the active year to populate the dropdown
-          try {
-            const semesters = await getSemestersBySchoolYear(String(active.schoolYearId));
-            setSemesterOptions(semesters);
-            setSemesterDisabled(false);
-          } catch (error) {
-            console.error('Error fetching semesters for active year:', error);
-          }
-
-          // Re-fetch stats filtered by the active semester
-          try {
-            const filteredStats = await getAdminDashboardStatsAction({
-              year: String(active.schoolYearId),
-              semester: String(active.id),
-            });
-            setStats(filteredStats);
-          } catch (error) {
-            console.error('Error fetching filtered stats:', error);
-          }
+        if (semesterOpts.length > 0) {
+          setSemesterOptions(semesterOpts);
+          setSemesterDisabled(false);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -110,7 +105,29 @@ export default function Dashboard() {
   // Passes selected year and semester as filters to Supabase queries.
   const handleLoad = async (year: string, semester: string) => {
     if (!year || !semester) return;
+
+    // ── Module reset: clear all data before re-fetching ──
+    setStats({
+      registeredStudents: 0,
+      pendingApprovals: 0,
+      approvedInterns: 0,
+      ojtCoordinators: 0,
+      registeredHTE: 0,
+      studentSummary: [],
+    });
+    setAuditData([]);
+
     try {
+      // ── Refresh reference data ──
+      const [academicData, semesterOpts] = await Promise.all([
+        getAcademicPageData(),
+        getSemestersBySchoolYear(year),
+      ]);
+      setYearOptions(academicData.yearOptions);
+      setSemesterOptions(semesterOpts);
+      setSemesterDisabled(false);
+
+      // ── Re-fetch main data with filters ──
       const filters = { year, semester };
       const [dashboardStats, auditLogs] = await Promise.all([
         getAdminDashboardStatsAction(filters),

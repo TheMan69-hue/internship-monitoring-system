@@ -1,4 +1,4 @@
-'use client';
+import { memo } from 'react';
 
 export interface AuditLogs {
   id: string;
@@ -35,7 +35,7 @@ const columnLabels: Partial<Record<keyof AuditLogs, string>> = {
   description: 'Description',
 };
 
-export default function AuditLogCard({
+function AuditLogCard({
   title,
   data,
   onRowClick,
@@ -98,3 +98,5 @@ export default function AuditLogCard({
     </div>
   );
 }
+
+export default memo(AuditLogCard);

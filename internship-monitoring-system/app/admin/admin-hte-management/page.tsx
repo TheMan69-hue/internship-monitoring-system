@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { HTE } from '@/lib/types';
 import YearFilter from '@/components/table/YearFilter';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
-import HTEDetailsModal from '@/components/modals/HTEDetailsModal';
-import HTEFormModal from '@/components/modals/HTEFormModal';
+
+const HTEDetailsModal = dynamic(() => import('@/components/modals/HTEDetailsModal'), { ssr: false });
+const HTEFormModal = dynamic(() => import('@/components/modals/HTEFormModal'), { ssr: false });
 import { fetchHTECompanies } from '@/lib/actions/hte';
 import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
 
@@ -27,34 +29,39 @@ export default function HTEManagementPage() {
   const [semesterOptions, setSemesterOptions] = useState<AcademicOption[]>([]);
   const [semesterDisabled, setSemesterDisabled] = useState(true);
 
-  // ── Initial Load ──
+  // ── Initial Load: Single-pass fetch ──
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [htes, academicData] = await Promise.all([
-          fetchHTECompanies(),
-          getAcademicPageData(),
-        ]);
-        setData(htes);
+        // Step 1: get academic data first to know the active period
+        const academicData = await getAcademicPageData();
         setYearOptions(academicData.yearOptions);
 
-        // Auto-select active school year and semester
         const active = academicData.activeSchoolYear;
+        let filters: { year: string; semester: string } | undefined;
+        let year = '';
+        let semester = '';
+
         if (active && active.schoolYearId && active.id) {
-          setSelectedYear(String(active.schoolYearId));
-          setSelectedSemester(String(active.id));
+          year = String(active.schoolYearId);
+          semester = String(active.id);
+          setSelectedYear(year);
+          setSelectedSemester(semester);
+          filters = { year, semester };
+        }
 
-          const semesters = await getSemestersBySchoolYear(String(active.schoolYearId));
-          setSemesterOptions(semesters);
+        // Step 2: single batch — only ONE HTE call
+        const [htes, semesterOpts] = await Promise.all([
+          fetchHTECompanies(filters),
+          year ? getSemestersBySchoolYear(year) : Promise.resolve([]),
+        ]);
+
+        setData(htes);
+
+        if (semesterOpts.length > 0) {
+          setSemesterOptions(semesterOpts);
           setSemesterDisabled(false);
-
-          // Re-fetch HTEs filtered by active semester
-          const filteredHTEs = await fetchHTECompanies({
-            year: String(active.schoolYearId),
-            semester: String(active.id),
-          });
-          setData(filteredHTEs);
         }
       } catch (error) {
         console.error('Error fetching HTE data:', error);
@@ -85,8 +92,21 @@ export default function HTEManagementPage() {
 
   const handleLoad = async (year: string, semester: string) => {
     if (!year || !semester) return;
+
+    // ── Module reset: close modals, clear selections ──
+    setSelectedHTE(null);
+    setShowDetailsModal(false);
+    setShowEditModal(false);
+    setError('');
     setIsLoading(true);
+
     try {
+      // ── Refresh reference data ──
+      const semesterOpts = await getSemestersBySchoolYear(year);
+      setSemesterOptions(semesterOpts);
+      setSemesterDisabled(false);
+
+      // ── Re-fetch main data with filters ──
       const filters = { year, semester };
       const htes = await fetchHTECompanies(filters);
       setData(htes);
