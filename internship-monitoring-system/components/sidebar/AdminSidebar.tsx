@@ -31,6 +31,7 @@ const adminRoutes: AdminRoute[] = [
   },
   { label: 'Intern', href: '/admin/intern', icon: <Users/> },
   { label: 'OJT Coordinator', href: '/admin/ojt-coordinator', icon: <UserStar/> },
+  { label: 'HTE Management', href: '/admin/admin-hte-management', icon: <UserStar/> },
 ];
 
 export default function Sidebar() {

@@ -32,11 +32,11 @@ export async function createCoordinator(data: {
     }
 
     // 2. Check that selected sections exist and have program_ids
-    let sections: { id: string; program_id: string }[] = [];
+    let sections: { id: string; program_id: string; section_name: string }[] = [];
     if (data.section_ids.length > 0) {
-      const { data: sectionData, error: sectionError } = await supabase
+      const { data: sectionData, error: sectionError } = await supabaseAdmin
         .from("sections")
-        .select("id, program_id")
+        .select("id, program_id, section_name")
         .in("id", data.section_ids);
 
       if (sectionError) throw sectionError;
@@ -101,13 +101,24 @@ export async function createCoordinator(data: {
     await writeAuditLog("create_coordinator", { table_name: "coordinators", record_id: coordinator.id, description: `Created coordinator: ${data.name}` });
 
     if (data.section_ids.length > 0) {
+      // Fetch program names for the unique program_ids
+      const programIds = [...new Set(sections.map((s) => s.program_id))];
+      const { data: programs } = await supabaseAdmin
+        .from("programs")
+        .select("id, program_name")
+        .in("id", programIds);
+
+      const programMap = new Map((programs ?? []).map((p) => [p.id, p.program_name]));
+
       const assignments = (sections ?? []).map((section) => ({
         coordinator_id: coordinator.id,
-        section: section.id,
-        program: section.program_id,
+        section: section.section_name,
+        program: programMap.get(section.program_id) ?? "Unknown Program",
+        section_id: section.id,
+        program_id: section.program_id,
       }));
 
-      const { error: assignmentError } = await supabase
+      const { error: assignmentError } = await supabaseAdmin
         .from("coordinator_assignments")
         .insert(assignments);
 
@@ -189,7 +200,7 @@ export async function updateCoordinator(
     }
 
     if (data.section_ids !== undefined) {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await supabaseAdmin
         .from("coordinator_assignments")
         .delete()
         .eq("coordinator_id", coordinatorId);
@@ -197,21 +208,32 @@ export async function updateCoordinator(
       if (deleteError) throw deleteError;
 
       if (data.section_ids.length > 0) {
-        // Fetch program_id for each selected section
-        const { data: sections, error: sectionsError } = await supabase
+        // Fetch section names and program_ids for each selected section
+        const { data: sections, error: sectionsError } = await supabaseAdmin
           .from("sections")
-          .select("id, program_id")
+          .select("id, program_id, section_name")
           .in("id", data.section_ids);
 
         if (sectionsError) throw sectionsError;
 
+        // Fetch program names for the unique program_ids
+        const programIds = [...new Set((sections ?? []).map((s) => s.program_id))];
+        const { data: programs } = await supabaseAdmin
+          .from("programs")
+          .select("id, program_name")
+          .in("id", programIds);
+
+        const programMap = new Map((programs ?? []).map((p) => [p.id, p.program_name]));
+
         const assignments = (sections ?? []).map((section) => ({
           coordinator_id: coordinatorId,
-          section: section.id,
-          program: section.program_id,
+          section: section.section_name,
+          program: programMap.get(section.program_id) ?? "Unknown Program",
+          section_id: section.id,
+          program_id: section.program_id,
         }));
 
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseAdmin
           .from("coordinator_assignments")
           .insert(assignments);
 
@@ -270,7 +292,7 @@ export async function deleteCoordinator(coordinatorId: string) {
     if (authError) throw authError;
 
     // Delete assignments
-    const { error: assignmentError } = await supabase
+    const { error: assignmentError } = await supabaseAdmin
       .from("coordinator_assignments")
       .delete()
       .eq("coordinator_id", coordinatorId);

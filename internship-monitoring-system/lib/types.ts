@@ -118,6 +118,7 @@ export type Coordinator = {
   is_active: boolean;
   created_by?: string;
   created_at?: string;
+  sections?: string[];
 }
 
 export type Section = {

@@ -20,11 +20,8 @@ export async function getPrograms(
 
   // NOTE: programs table doesn't have school_year_id/semester_id columns yet.
   // Uncomment these once those columns exist:
-  // if (filters?.year) {
-  //   query = query.eq("school_year_id", filters.year);
-  // }
-  // if (filters?.semester) {
-  //   query = query.eq("semester_id", filters.semester);
+  // if (_filters?.semester) {
+  //   query = query.eq("semester_id", _filters.semester);
   // }
 
   query = query.order("created_at", { ascending: true });

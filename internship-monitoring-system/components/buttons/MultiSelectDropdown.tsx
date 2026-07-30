@@ -168,20 +168,32 @@ export default function MultiSelectDropdown({
               {filtered.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-gray-400">No options found</p>
               ) : (
-                filtered.map((opt) => (
-                  <label
-                    key={opt.id}
-                    className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(opt.id)}
-                      onChange={() => toggle(opt.id)}
-                      className="accent-blue-600"
-                    />
-                    {opt.name}
-                  </label>
-                ))
+                filtered.map((opt) => {
+                  const isSelected = selected.includes(opt.id);
+                  return (
+                    <label
+                      key={opt.id}
+                      className={`flex items-center gap-3 px-4 py-2 cursor-pointer text-sm ${
+                        isSelected
+                          ? 'bg-blue-50 hover:bg-blue-100'
+                          : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggle(opt.id)}
+                        className="accent-blue-600"
+                      />
+                      <span className={isSelected ? 'font-medium text-blue-700' : ''}>
+                        {opt.name}
+                      </span>
+                      {isSelected && (
+                        <span className="ml-auto text-blue-500 text-xs">Selected</span>
+                      )}
+                    </label>
+                  );
+                })
               )}
             </div>
           </div>

@@ -12,11 +12,8 @@ export async function getCoordinators(
 
   // NOTE: coordinators table doesn't have school_year_id/semester_id columns yet.
   // Uncomment these once those columns exist:
-  // if (filters?.year) {
-  //   query = query.eq("school_year_id", filters.year);
-  // }
-  // if (filters?.semester) {
-  //   query = query.eq("semester_id", filters.semester);
+  // if (_filters?.semester) {
+  //   query = query.eq("semester_id", _filters.semester);
   // }
 
   query = query.order("created_at", { ascending: true });
@@ -44,6 +41,25 @@ export async function getCoordinators(
     (profilesData ?? []).map((profile) => [profile.id, profile])
   );
 
+  const coordinatorIds = (coordinatorsData ?? []).map((c) => c.id).filter(Boolean);
+
+  // Fetch assigned sections for all coordinators
+  const { data: assignmentsData, error: assignmentsError } = await supabase
+    .from("coordinator_assignments")
+    .select("coordinator_id, section_id")
+    .in("coordinator_id", coordinatorIds);
+
+  if (assignmentsError) {
+    throw assignmentsError;
+  }
+
+  const sectionsByCoordinator = new Map<string, string[]>();
+  (assignmentsData ?? []).forEach((a) => {
+    const existing = sectionsByCoordinator.get(a.coordinator_id) ?? [];
+    if (a.section_id) existing.push(a.section_id);
+    sectionsByCoordinator.set(a.coordinator_id, existing);
+  });
+
   return (coordinatorsData ?? []).map((coordinator) => {
     const profile = coordinator.profile_id
       ? profilesById.get(coordinator.profile_id)
@@ -58,6 +74,7 @@ export async function getCoordinators(
       password: "",
       is_active: true,
       created_at: coordinator.created_at ?? undefined,
+      sections: sectionsByCoordinator.get(coordinator.id) ?? [],
     } satisfies Coordinator;
   });
 }

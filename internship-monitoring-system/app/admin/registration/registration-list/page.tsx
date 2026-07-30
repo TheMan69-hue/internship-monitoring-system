@@ -34,6 +34,17 @@ export default function Dashboard() {
         ]);
         setYearOptions(academicData.yearOptions);
         setData(registrations);
+
+        // Auto-select active school year and semester
+        const active = academicData.activeSchoolYear;
+        if (active && active.schoolYearId && active.id) {
+          setSelectedYear(String(active.schoolYearId));
+          setSelectedSemester(String(active.id));
+
+          const semesters = await getSemestersBySchoolYear(String(active.schoolYearId));
+          setSemesterOptions(semesters);
+          setSemesterDisabled(false);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {

@@ -1,22 +1,24 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Student } from '@/lib/types';
+import { HTE } from '@/lib/types';
 import YearFilter from '@/components/table/YearFilter';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
-import Modal from '@/components/modals/Modal';
-import DetailField from '@/components/ui/DetailField';
+import HTEDetailsModal from '@/components/modals/HTEDetailsModal';
+import HTEFormModal from '@/components/modals/HTEFormModal';
+import { fetchHTECompanies } from '@/lib/actions/hte';
 import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
-import { fetchStudents } from '@/lib/actions/students';
 
 type AcademicOption = { value: string; label: string };
 
-export default function InternPage() {
-  const [Data, setData] = useState<Student[]>([]);
+export default function HTEManagementPage() {
+  const [Data, setData] = useState<HTE[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [selectedHTE, setSelectedHTE] = useState<HTE | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [error, setError] = useState('');
 
   // ── Academic Year / Semester Filter State ──
   const [selectedYear, setSelectedYear] = useState<string>('');
@@ -30,11 +32,11 @@ export default function InternPage() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [students, academicData] = await Promise.all([
-          fetchStudents(),
+        const [htes, academicData] = await Promise.all([
+          fetchHTECompanies(),
           getAcademicPageData(),
         ]);
-        setData(students);
+        setData(htes);
         setYearOptions(academicData.yearOptions);
 
         // Auto-select active school year and semester
@@ -47,15 +49,15 @@ export default function InternPage() {
           setSemesterOptions(semesters);
           setSemesterDisabled(false);
 
-          // Re-fetch students filtered by active semester
-          const filteredStudents = await fetchStudents({
+          // Re-fetch HTEs filtered by active semester
+          const filteredHTEs = await fetchHTECompanies({
             year: String(active.schoolYearId),
             semester: String(active.id),
           });
-          setData(filteredStudents);
+          setData(filteredHTEs);
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching HTE data:', error);
       } finally {
         setIsLoading(false);
       }
@@ -86,8 +88,8 @@ export default function InternPage() {
     setIsLoading(true);
     try {
       const filters = { year, semester };
-      const students = await fetchStudents(filters);
-      setData(students);
+      const htes = await fetchHTECompanies(filters);
+      setData(htes);
     } catch (error) {
       console.error('Error loading filtered data:', error);
     } finally {
@@ -95,15 +97,29 @@ export default function InternPage() {
     }
   };
 
-  const handleRowClick = (student: Student) => {
-    setSelectedStudent(student);
-    setShowModal(true);
+  const handleRowClick = (hte: HTE) => {
+    setSelectedHTE(hte);
+    setShowDetailsModal(true);
+  };
+
+  const handleEdit = () => {
+    setShowDetailsModal(false);
+    setShowEditModal(true);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      const htes = await fetchHTECompanies();
+      setData(htes);
+    } catch (error) {
+      console.error('Error refreshing HTE data:', error);
+    }
   };
 
   return (
     <main className="flex flex-col flex-1 h-full p-5">
       <div className="flex flex-row justify-between items-center text-black mb-5">
-        <h1>Intern Management</h1>
+        <h1>HTE Management</h1>
       </div>
       <div>
         <YearFilter
@@ -119,35 +135,51 @@ export default function InternPage() {
           semesterDisabled={semesterDisabled}
         />
       </div>
-      <TableLayout<Student> title="All Interns" data={Data} searchKeys={['name', 'email', 'program', 'studentNumber']}>
+      <TableLayout<HTE> title="HTE Companies" data={Data} searchKeys={['company', 'address', 'contactPerson', 'email']}>
         {(pagedData) => (
           <ReusableTable
             data={pagedData}
             isLoading={isLoading}
-            columns={['studentNumber', 'name', 'program', 'section', 'email']}
+            columns={['company', 'address', 'contactPerson', 'email', 'currentInterns']}
             onRowClick={handleRowClick}
           />
         )}
       </TableLayout>
-      {showModal && selectedStudent && (
-        <Modal title="Intern Details" onClose={() => { setShowModal(false); setSelectedStudent(null); }}>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-6 p-6">
-            <DetailField label="Full Name" value={selectedStudent.name} />
-            <DetailField label="Student Number" value={selectedStudent.studentNumber} />
-            <DetailField label="Email" value={selectedStudent.email} />
-            <DetailField label="Program" value={selectedStudent.program} />
-            <DetailField label="Section" value={selectedStudent.section} />
-            <DetailField label="Contact Number" value={selectedStudent.contactNumber} />
-            {selectedStudent.hte && <DetailField label="HTE Company" value={selectedStudent.hte.companyName} />}
-            {selectedStudent.schedule && (
-              <>
-                <DetailField label="Expected Time In" value={selectedStudent.schedule.expectedTimeIn} />
-                <DetailField label="Expected Time Out" value={selectedStudent.schedule.expectedTimeOut} />
-                <DetailField label="Required Hours" value={String(selectedStudent.schedule.requiredHours)} />
-              </>
-            )}
-          </div>
-        </Modal>
+
+      {error && (
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg">
+          <span>{error}</span>
+          <button onClick={() => setError('')} className="ml-3 font-bold">&times;</button>
+        </div>
+      )}
+
+      {showDetailsModal && selectedHTE && (
+        <HTEDetailsModal
+          hte={selectedHTE}
+          hteId={selectedHTE.id}
+          onClose={() => { setShowDetailsModal(false); setSelectedHTE(null); }}
+          onEdit={handleEdit}
+          onSuccess={() => {
+            setShowDetailsModal(false);
+            setSelectedHTE(null);
+            handleRefresh();
+          }}
+          onError={(msg) => setError(msg)}
+        />
+      )}
+
+      {showEditModal && selectedHTE && (
+        <HTEFormModal
+          hte={selectedHTE}
+          hteId={selectedHTE.id}
+          onClose={() => { setShowEditModal(false); setSelectedHTE(null); }}
+          onSuccess={() => {
+            setShowEditModal(false);
+            setSelectedHTE(null);
+            handleRefresh();
+          }}
+          onError={(msg) => setError(msg)}
+        />
       )}
     </main>
   );

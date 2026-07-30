@@ -3,13 +3,12 @@
 import { useState, useEffect } from 'react';
 import YearFilter from '@/components/table/YearFilter';
 import Card from '@/components/cards/DashboardCard';
-import Summary from '@/components/cards/DashboardSummaryCard';
 import AuditLog, { AuditLogs } from '@/components/cards/AuditLogCard';
 import { User, Users, Building2, ClipboardCheck } from 'lucide-react';
 import {
-  getAdminDashboardStats,
+  getAdminDashboardStatsAction,
   type AdminDashboardStats,
-} from '@/lib/services/admin/dashboard';
+} from '@/lib/actions/dashboard';
 import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
 import { getAuditLogsAction } from '@/lib/actions/audit-logs';
 
@@ -37,11 +36,12 @@ export default function Dashboard() {
   // ── Initial Load: Fetch all data needed for the dashboard ──
   // Runs once on component mount. Gets dashboard stats, audit logs,
   // and academic year options for the filter dropdown.
+  // Auto-selects the active school year and semester.
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [dashboardStats, auditLogs, academicData] = await Promise.all([
-          getAdminDashboardStats(),
+          getAdminDashboardStatsAction(),
           getAuditLogsAction(),
           getAcademicPageData(),
         ]);
@@ -49,8 +49,33 @@ export default function Dashboard() {
         setStats(dashboardStats);
         setAuditData(auditLogs);
         setYearOptions(academicData.yearOptions);
-        // Note: semesterOptions is NOT set here — it will be fetched
-        // when the user selects a year via handleYearChange
+
+        // Auto-select active school year and semester
+        const active = academicData.activeSchoolYear;
+        if (active && active.schoolYearId && active.id) {
+          setSelectedYear(String(active.schoolYearId));
+          setSelectedSemester(String(active.id));
+
+          // Fetch semesters for the active year to populate the dropdown
+          try {
+            const semesters = await getSemestersBySchoolYear(String(active.schoolYearId));
+            setSemesterOptions(semesters);
+            setSemesterDisabled(false);
+          } catch (error) {
+            console.error('Error fetching semesters for active year:', error);
+          }
+
+          // Re-fetch stats filtered by the active semester
+          try {
+            const filteredStats = await getAdminDashboardStatsAction({
+              year: String(active.schoolYearId),
+              semester: String(active.id),
+            });
+            setStats(filteredStats);
+          } catch (error) {
+            console.error('Error fetching filtered stats:', error);
+          }
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -88,7 +113,7 @@ export default function Dashboard() {
     try {
       const filters = { year, semester };
       const [dashboardStats, auditLogs] = await Promise.all([
-        getAdminDashboardStats(filters),
+        getAdminDashboardStatsAction(filters),
         getAuditLogsAction(),
       ]);
       setStats(dashboardStats);

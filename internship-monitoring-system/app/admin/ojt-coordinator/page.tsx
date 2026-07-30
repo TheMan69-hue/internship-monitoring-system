@@ -54,6 +54,17 @@ export default function Dashboard() {
         setData(coordinators);
         setSectionOptions(sections);
         setYearOptions(academicData.yearOptions);
+
+        // Auto-select active school year and semester
+        const active = academicData.activeSchoolYear;
+        if (active && active.schoolYearId && active.id) {
+          setSelectedYear(String(active.schoolYearId));
+          setSelectedSemester(String(active.id));
+
+          const semesters = await getSemestersBySchoolYear(String(active.schoolYearId));
+          setSemesterOptions(semesters);
+          setSemesterDisabled(false);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -83,7 +94,20 @@ export default function Dashboard() {
 
   const handleLoad = async (year: string, semester: string) => {
     if (!year || !semester) return;
-    await fetchData(year, semester);
+    setIsLoading(true);
+    try {
+      const filters = { year, semester };
+      const [coordinators, sections] = await Promise.all([
+        getCoordinators(filters),
+        getSectionOptions(),
+      ]);
+      setData(coordinators);
+      setSectionOptions(sections);
+    } catch (error) {
+      console.error('Error loading filtered data:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDelete = async (row: Coordinator) => {

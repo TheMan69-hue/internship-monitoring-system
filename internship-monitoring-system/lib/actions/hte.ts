@@ -104,3 +104,82 @@ export async function deleteHTEAction(hteId: string) {
     };
   }
 }
+
+export async function fetchHTECompanies(
+  _filters?: { year?: string; semester?: string }
+) {
+  try {
+    let query = supabaseAdmin
+      .from("hte_companies")
+      .select(`
+        id,
+        company_name,
+        address,
+        contact_person,
+        contact_number,
+        email,
+        status,
+        gps_coordinates
+      `);
+
+    query = query.order("company_name", { ascending: true });
+
+    // Filter HTE companies by semester through students(hte_id → semester_id)
+    if (_filters?.semester) {
+      const { data: studentHTEs } = await supabaseAdmin
+        .from("students")
+        .select("hte_id")
+        .eq("semester_id", _filters.semester)
+        .not("hte_id", "is", null);
+
+      const hteIds = [
+        ...new Set((studentHTEs ?? []).map((s) => s.hte_id).filter(Boolean)),
+      ];
+
+      if (hteIds.length > 0) {
+        query = query.in("id", hteIds);
+      } else {
+        query = query.in("id", []);
+      }
+    }
+
+    const { data: htes, error: hteError } = await query;
+
+    if (hteError) throw hteError;
+
+    // Count interns per HTE (filtered by semester if provided)
+    let internQuery = supabaseAdmin
+      .from("students")
+      .select("hte_id")
+      .not("hte_id", "is", null);
+
+    if (_filters?.semester) {
+      internQuery = internQuery.eq("semester_id", _filters.semester);
+    }
+
+    const { data: students, error: studentError } = await internQuery;
+
+    if (studentError) throw studentError;
+
+    const internCounts = new Map<string, number>();
+    for (const student of students ?? []) {
+      const count = internCounts.get(student.hte_id) ?? 0;
+      internCounts.set(student.hte_id, count + 1);
+    }
+
+    return (htes ?? []).map((hte) => ({
+      id: hte.id,
+      company: hte.company_name,
+      address: hte.address ?? "",
+      contactPerson: hte.contact_person,
+      email: hte.email,
+      phone: hte.contact_number,
+      workSchedule: null,
+      workingHours: null,
+      currentInterns: internCounts.get(hte.id) ?? 0,
+    }));
+  } catch (error) {
+    console.error("fetchHTECompanies error:", error);
+    throw error;
+  }
+}

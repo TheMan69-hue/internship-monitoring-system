@@ -1,4 +1,6 @@
-import { createClient } from "@/lib/supabase/client";
+"use server";
+
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export type AdminDashboardStats = {
   registeredStudents: number;
@@ -9,12 +11,17 @@ export type AdminDashboardStats = {
   studentSummary: { program: string; count: number }[];
 };
 
-export async function getAdminDashboardStats(
+/**
+ * Fetches admin dashboard statistics.
+ * Uses supabaseAdmin (service role) to bypass RLS restrictions.
+ * Filters by semester when provided.
+ */
+export async function getAdminDashboardStatsAction(
   _filters?: { year?: string; semester?: string }
 ): Promise<AdminDashboardStats> {
-  const supabase = createClient();
+  const supabase = supabaseAdmin;
 
-  // Build base queries that can be extended with filters
+  // ── Build base queries ──
   let studentRegQuery = supabase
     .from("student_registrations")
     .select("*", { count: "exact", head: true });
@@ -40,7 +47,7 @@ export async function getAdminDashboardStats(
     .from("students")
     .select("program:programs(program_name)");
 
-  // Apply Supabase-side filters when provided
+  // ── Apply filters when semester is provided ──
   if (_filters?.semester) {
     // students table has semester_id column
     studentsCountQuery = studentsCountQuery.eq("semester_id", _filters.semester);
@@ -64,6 +71,7 @@ export async function getAdminDashboardStats(
     }
   }
 
+  // ── Execute all queries in parallel ──
   const [
     { count: registeredStudents },
     { count: pendingApprovals },
@@ -80,6 +88,7 @@ export async function getAdminDashboardStats(
     studentsSummaryQuery,
   ]);
 
+  // ── Build student summary by program ──
   const programCounts = new Map<string, number>();
 
   (students ?? []).forEach((student) => {
@@ -103,29 +112,4 @@ export async function getAdminDashboardStats(
     registeredHTE: registeredHTE ?? 0,
     studentSummary,
   };
-}
-
-export type AuditLogEntry = {
-  date: string;
-  time: string;
-  user_id: string;
-  action: string;
-  status?: string;
-};
-
-export async function getAuditLogs(): Promise<AuditLogEntry[]> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from("audit_logs")
-    .select("date, time, user_id, action, status")
-    .order("date", { ascending: false })
-    .order("time", { ascending: false })
-    .limit(20);
-
-  if (error) {
-    return [];
-  }
-
-  return (data ?? []) as AuditLogEntry[];
 }
