@@ -5,138 +5,134 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
-
 export default function LoginPage() {
-
   const supabase = createClient();
-
   const router = useRouter();
 
-
-  const [email,setEmail] = useState("");
-  const [password,setPassword] = useState("");
-
-  const [error,setError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-
-
-  async function handleLogin(e: React.FormEvent){
-
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-
     setError("");
-
-
-
-    const {
-        error
-        } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
-        });
+    });
 
-   if(error){
-
+    if (error) {
         setError(error.message);
-
         return;
-
     }
-        const {
-        data: {
-            session
-        }
-        } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-
-        if(!session){
-
+    if (!session) {
         setError("Session was not created");
-
         return;
-
         }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
+    const role = profile?.role ?? "coordinator";
 
-        const role = profile?.role ?? "coordinator";
-
-        router.refresh();
-
-        router.push(
-          role === "admin" ? "/admin/dashboard" : "/coordinator/dashboard"
-        );
-
+    router.refresh();
+    router.push(role === "admin" ? "/admin/dashboard" : "/coordinator/dashboard");
   }
 
-
-
   return (
+    <main className="min-h-screen bg-[#cfcfcf] text-slate-950">
+      <div className="flex min-h-screen">
+        <section className="flex w-full max-w-[460px] flex-col bg-[#f7f7f7] px-10 py-16 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
+          <div className="max-w-[380px]">
+            <h1 className="mb-8 max-w-[250px] text-[2.15rem] font-black uppercase leading-[0.86] tracking-[-0.05em] text-black">
+              LOG IN YOUR ACCOUNT
+            </h1>
 
-    <div className="flex min-h-screen items-center justify-center">
+            <form onSubmit={handleLogin} className="space-y-5">
+              <label className="block text-[0.95rem] text-slate-900">
+                <span className="mb-2 block">Email</span>
+                <input
+                  type="email"
+                  placeholder=""
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-12 w-full rounded-[6px] border border-[#dddddd] bg-[#efefef] px-3 text-[0.95rem] outline-none transition focus:border-slate-400"
+                />
+              </label>
 
-      <form
-        onSubmit={handleLogin}
-        className="flex w-96 flex-col gap-4 rounded-lg border p-6"
-      >
+              <label className="block text-[0.95rem] text-slate-900">
+                <span className="mb-2 block">Password</span>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder=""
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 w-full rounded-[6px] border border-[#dddddd] bg-[#efefef] px-3 pr-11 text-[0.95rem] outline-none transition focus:border-slate-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </label>
 
-        <h1 className="text-2xl font-bold">
-          SIMMS Login
-        </h1>
+              <div className="flex justify-end pt-1">
+                <a href="#" className="text-[0.92rem] text-[#5f7d9b] hover:underline">
+                  Forgot My Password
+                </a>
+              </div>
 
+              {error && (
+                <p className="text-sm text-red-600" role="alert">
+                  {error}
+                </p>
+              )}
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e)=>setEmail(e.target.value)}
-          className="rounded border p-2"
-        />
+              <button
+                type="submit"
+                className="h-11 w-full rounded-[6px] bg-[#dddddd] text-[0.95rem] font-medium uppercase tracking-[-0.02em] text-black transition hover:bg-[#d3d3d3] focus:outline-none focus:ring-2 focus:ring-black/15"
+              >
+                LOG IN
+              </button>
 
+              <div className="flex items-center gap-4 py-1 text-[0.95rem] text-slate-900">
+                <span className="h-px flex-1 bg-transparent" />
+                <span>or</span>
+                <span className="h-px flex-1 bg-transparent" />
+              </div>
 
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            value={password}
-            onChange={(e)=>setPassword(e.target.value)}
-            className="w-full rounded border p-2 pr-10"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-          >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
-        </div>
+              <button
+                type="button"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[6px] bg-[#dddddd] text-[0.95rem] text-black transition hover:bg-[#d3d3d3]"
+              >
+                <span className="h-4 w-4 rounded-full bg-[#c7c7c7]" aria-hidden="true" />
+                Continue with Google
+              </button>
 
+              <p className="pt-2 text-center text-[0.95rem] text-slate-900">
+                No account?{" "}
+                <a href="#" className="text-[#5f7d9b] hover:underline">
+                  Create account
+                </a>
+              </p>
+            </form>
+          </div>
+        </section>
 
-        {
-          error &&
-          <p className="text-red-500">
-            {error}
-          </p>
-        }
-
-
-        <button
-          type="submit"
-          className="rounded bg-black p-2 text-white"
-        >
-          Login
-        </button>
-
-
-      </form>
-
-    </div>
-
+        <section className="hidden flex-1 bg-[#cfcfcf] lg:block" aria-hidden="true" />
+      </div>
+    </main>
   );
-
 }

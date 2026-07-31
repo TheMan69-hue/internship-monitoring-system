@@ -52,7 +52,11 @@ export default async function CoordinatorDashboardPage() {
 
     <div>
 
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex items-center justify-between gap-4">
+
+        <h1 className="text-3xl font-bold text-[#000000]">
+          Dashboard
+        </h1>
 
         <SearchBar />
 

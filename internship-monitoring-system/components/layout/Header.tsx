@@ -1,17 +1,17 @@
+import UserProfileModal from "./UserProfileModal";
+
 export default function Header() {
   return (
     <header className="bg-[#D9D9D9] border-b h-20 flex items-center justify-between px-8">
 
       <div>
-
-        <h1 className="text-3xl font-bold text-[#000000]">
-          Dashboard
-        </h1>
-
-        <p className="text-gray-500 text-[#000000]">
-          Good Morning,
-          Juan Dela Cruz
-        </p>
+        <UserProfileModal
+          role="coordinator"
+          containerClassName="w-fit"
+          buttonClassName="bg-[#D6D6D6] px-0 py-0 shadow-none hover:bg-[#D6D6D6]"
+          buttonTextClassName="text-3xl font-bold text-[#000000]"
+          buttonIconClassName="h-7 w-7 text-[#000000]"
+        />
 
       </div>
 
