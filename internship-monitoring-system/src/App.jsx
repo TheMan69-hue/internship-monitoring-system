@@ -808,10 +808,6 @@ function App() {
     )
   }
 
-  if (isLoadingProfile) {
-    return <main style={{ padding: '2rem' }}>Loading dashboard...</main>
-  }
-
   if (currentPage === 'profile') {
     return (
       <ProfileSettings
@@ -829,7 +825,15 @@ function App() {
     )
   }
 
-  return <Dashboard onOpenProfile={openProfile} studentProfile={profile} userId={session.user.id} activeSemester={activeSemester} />
+  return (
+    <Dashboard
+      onOpenProfile={openProfile}
+      studentProfile={profile}
+      userId={session.user.id}
+      activeSemester={activeSemester}
+      isProfileLoading={isLoadingProfile}
+    />
+  )
 }
 
 export default App

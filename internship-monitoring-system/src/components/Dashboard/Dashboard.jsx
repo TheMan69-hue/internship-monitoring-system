@@ -94,7 +94,7 @@ function getRenderedDuration(record) {
   return Math.max(0, new Date(record.time_out).getTime() - new Date(record.time_in).getTime())
 }
 
-function Dashboard({ onOpenProfile, studentProfile, userId, activeSemester }) {
+function Dashboard({ onOpenProfile, studentProfile, userId, activeSemester, isProfileLoading = false }) {
   const [clockNow, setClockNow] = useState(new Date())
   const [liveLocation, setLiveLocation] = useState('')
   const [gpsPermissionState, setGpsPermissionState] = useState('prompt')
@@ -109,6 +109,10 @@ function Dashboard({ onOpenProfile, studentProfile, userId, activeSemester }) {
   }, [])
 
   useEffect(() => {
+    if (isProfileLoading) {
+      return
+    }
+
     let isMounted = true
 
     async function loadLiveLocationPreview() {
@@ -166,7 +170,7 @@ function Dashboard({ onOpenProfile, studentProfile, userId, activeSemester }) {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [isProfileLoading])
 
   const displayTime = useMemo(
     () =>
@@ -241,6 +245,7 @@ function Dashboard({ onOpenProfile, studentProfile, userId, activeSemester }) {
           userId={userId}
           clockNow={clockNow}
           activeSemester={activeSemester}
+          isProfileLoading={isProfileLoading}
         />
 
         <section className="hours-progress" aria-label="Internship hours progress">
@@ -257,6 +262,12 @@ function Dashboard({ onOpenProfile, studentProfile, userId, activeSemester }) {
           {progress.requiredMs ? <p className="hours-progress__remaining">{progress.remainingMs ? `${formatDuration(progress.remainingMs)} remaining` : 'Required hours completed'}</p> : null}
         </section>
       </section>
+
+      {isProfileLoading ? (
+        <section className="dashboard-loading-banner" aria-live="polite">
+          Loading your profile and attendance history...
+        </section>
+      ) : null}
 
       <AttendanceTracker clockNow={clockNow} gpsPermissionState={gpsPermissionState} userId={userId} activeSemester={activeSemester} />
     </main>

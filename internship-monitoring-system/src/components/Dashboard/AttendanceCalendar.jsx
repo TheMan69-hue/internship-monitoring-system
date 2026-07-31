@@ -57,6 +57,7 @@ export default function AttendanceCalendar({
   activeSemester = null,
   onMonthChange,
   onRecordsLoaded,
+  isProfileLoading = false,
 }) {
   const [viewDate, setViewDate] = useState(() => new Date(clockNow.getFullYear(), clockNow.getMonth(), 1))
   const [monthlyRecords, setMonthlyRecords] = useState({})
@@ -68,6 +69,10 @@ export default function AttendanceCalendar({
 
   // Fetch attendance records from Supabase when month view or studentId changes
   useEffect(() => {
+    if (isProfileLoading) {
+      return
+    }
+
     let isMounted = true
 
     async function fetchMonthlyRecords() {
@@ -153,7 +158,7 @@ export default function AttendanceCalendar({
     return () => {
       isMounted = false
     }
-  }, [viewDate, activeStudentId, userId, activeSemester?.id, activeSemester?.startDate, activeSemester?.endDate])
+  }, [viewDate, activeStudentId, userId, activeSemester?.id, activeSemester?.startDate, activeSemester?.endDate, isProfileLoading])
 
   const attendanceStatusMap = useMemo(() => {
     const map = {}

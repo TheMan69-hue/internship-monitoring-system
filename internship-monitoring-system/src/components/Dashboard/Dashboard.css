@@ -158,6 +158,18 @@
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
+.dashboard-loading-banner {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(9, 80, 30, 0.88);
+  color: #ffffff;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+}
+
 .attendance-calendar-container {
   display: flex;
   flex-direction: column;
