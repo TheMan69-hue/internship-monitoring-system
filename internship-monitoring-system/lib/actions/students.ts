@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Student } from "@/lib/types";
 
@@ -85,4 +86,157 @@ export async function fetchStudents(
       : null,
     schedule: null,
   }));
+}
+
+async function resolveAuthUserId(studentId: string, emailAddress: string) {
+  const { data: student, error: studentError } = await supabaseAdmin
+    .from("students")
+    .select("user_id")
+    .eq("id", studentId)
+    .maybeSingle();
+
+  if (studentError) {
+    throw studentError;
+  }
+
+  if (student?.user_id) {
+    return student.user_id as string;
+  }
+
+  const { data: authData, error: authError } =
+    await supabaseAdmin.auth.admin.listUsers();
+
+  if (authError) {
+    throw authError;
+  }
+
+  const authUser = authData.users.find((user) => user.email === emailAddress);
+
+  if (!authUser) {
+    throw new Error("Auth user not found for this intern.");
+  }
+
+  return authUser.id;
+}
+
+export async function updateInternDetails(
+  studentId: string,
+  data: {
+    fullName: string;
+    email: string;
+    program: string;
+    section: string;
+    password?: string;
+  }
+) {
+  try {
+    const { data: currentStudent, error: fetchError } = await supabaseAdmin
+      .from("students")
+      .select("id, email_address, user_id")
+      .eq("id", studentId)
+      .maybeSingle();
+
+    if (fetchError) {
+      throw fetchError;
+    }
+
+    if (!currentStudent) {
+      throw new Error("Intern not found.");
+    }
+
+    const authUserId = await resolveAuthUserId(
+      studentId,
+      currentStudent.email_address ?? data.email
+    );
+
+    const authUpdate: {
+      email?: string;
+      password?: string;
+      user_metadata: {
+        display_name: string;
+        full_name: string;
+      };
+    } = {
+      user_metadata: {
+        display_name: data.fullName,
+        full_name: data.fullName,
+      },
+    };
+
+    const nextEmail = data.email.trim();
+    if (nextEmail) {
+      authUpdate.email = nextEmail;
+    }
+
+    const nextPassword = data.password?.trim();
+    if (nextPassword) {
+      authUpdate.password = nextPassword;
+    }
+
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+      authUserId,
+      authUpdate
+    );
+
+    if (authError) {
+      throw authError;
+    }
+
+    const { data: programRow, error: programError } = await supabaseAdmin
+      .from("programs")
+      .select("id, program_name")
+      .eq("program_name", data.program)
+      .maybeSingle();
+
+    if (programError) {
+      throw programError;
+    }
+
+    if (!programRow) {
+      throw new Error("Program not found.");
+    }
+
+    const { data: sectionRow, error: sectionError } = await supabaseAdmin
+      .from("sections")
+      .select("id, section_name")
+      .eq("section_name", data.section)
+      .maybeSingle();
+
+    if (sectionError) {
+      throw sectionError;
+    }
+
+    if (!sectionRow) {
+      throw new Error("Section not found.");
+    }
+
+    const { error: studentError } = await supabaseAdmin
+      .from("students")
+      .update({
+        name: data.fullName,
+        email_address: nextEmail,
+        program: data.program,
+        section: data.section,
+        program_id: programRow.id,
+        section_id: sectionRow.id,
+      })
+      .eq("id", studentId);
+
+    if (studentError) {
+      throw studentError;
+    }
+
+    revalidatePath("/admin/intern");
+
+    return { success: true };
+  } catch (error) {
+    console.error("updateInternDetails error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null
+          ? JSON.stringify(error)
+          : "Failed to update intern details.";
+    return { success: false, message };
+  }
 }

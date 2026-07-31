@@ -1,14 +1,46 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { coordinatorMenu } from "@/lib/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 export default function Sidebar() {
   const [studentOpen, setStudentOpen] = useState(false);
+  const [greetingName, setGreetingName] = useState("Coordinator");
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadGreetingName = async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || cancelled) {
+        return;
+      }
+
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!cancelled) {
+        setGreetingName(profileRow?.full_name ?? user.user_metadata?.full_name ?? "Coordinator");
+      }
+    };
+
+    loadGreetingName();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -21,11 +53,11 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="p-6 border-b">
         <h1 className="text-xl font-bold text-[#000000]">
-          Internship Monitoring System
+          Internship Management System
         </h1>
 
         <p className="text-sm text-[#000000] ">
-          OJT Coordinator
+          Hello, {greetingName}
         </p>
       </div>
 

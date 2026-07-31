@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { Student } from '@/lib/types';
 import YearFilter from '@/components/table/YearFilter';
 import TableLayout from '@/components/layout/TablePageLayout';
 import ReusableTable from '@/components/table/Table';
-
-const Modal = dynamic(() => import('@/components/modals/Modal'), { ssr: false });
-import DetailField from '@/components/ui/DetailField';
 import { getAcademicPageData, getSemestersBySchoolYear } from '@/lib/services/admin/academic';
-import { fetchStudents } from '@/lib/actions/students';
+import { getSectionOptions } from '@/lib/services/admin/coordinators';
+import { fetchStudents, updateInternDetails } from '@/lib/actions/students';
+import InternDetailsModal from '@/components/modals/InternDetailsModal';
+import EditInternDetailsModal from '@/components/modals/EditInternDetailsModal';
 
 type AcademicOption = { value: string; label: string };
 
@@ -19,6 +18,10 @@ export default function InternPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [sectionOptions, setSectionOptions] = useState<string[]>([]);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState('');
 
   // ── Academic Year / Semester Filter State ──
   const [selectedYear, setSelectedYear] = useState<string>('');
@@ -32,9 +35,13 @@ export default function InternPage() {
     const load = async () => {
       setIsLoading(true);
       try {
-        // Step 1: get academic data first to know the active period
-        const academicData = await getAcademicPageData();
+        // Step 1: get academic data and shared reference options.
+        const [academicData, sections] = await Promise.all([
+          getAcademicPageData(),
+          getSectionOptions(),
+        ]);
         setYearOptions(academicData.yearOptions);
+        setSectionOptions(sections.map((section) => section.name));
 
         const active = academicData.activeSchoolYear;
         let filters: { year: string; semester: string } | undefined;
@@ -94,6 +101,7 @@ export default function InternPage() {
     // ── Module reset: close modals, clear selections ──
     setSelectedStudent(null);
     setShowModal(false);
+    setEditModalOpen(false);
     setIsLoading(true);
 
     try {
@@ -115,6 +123,80 @@ export default function InternPage() {
 
   const handleRowClick = (student: Student) => {
     setSelectedStudent(student);
+    setShowModal(true);
+    setEditModalOpen(false);
+    setEditError('');
+  };
+
+  const openEditModal = () => {
+    setEditError('');
+    setShowModal(false);
+    setEditModalOpen(true);
+  };
+
+  const closeDetailsModal = () => {
+    setShowModal(false);
+    setEditModalOpen(false);
+    setSelectedStudent(null);
+    setEditError('');
+  };
+
+  const cancelEditModal = () => {
+    setEditError('');
+    setEditModalOpen(false);
+    setShowModal(true);
+  };
+
+  const handleSaveIntern = async (data: {
+    fullName: string;
+    email: string;
+    program: string;
+    section: string;
+    password?: string;
+  }) => {
+    if (!selectedStudent) {
+      return;
+    }
+
+    setEditLoading(true);
+    setEditError('');
+
+    const studentId = selectedStudent.id;
+    const result = await updateInternDetails(studentId, data);
+    setEditLoading(false);
+
+    if (!result.success) {
+      setEditError(result.message ?? 'Failed to update intern details.');
+      return;
+    }
+
+    setData((current) =>
+      current.map((student) =>
+        student.id === studentId
+          ? {
+              ...student,
+              name: data.fullName,
+              email: data.email,
+              program: data.program,
+              section: data.section,
+            }
+          : student
+      )
+    );
+
+    setSelectedStudent((current) =>
+      current
+        ? {
+            ...current,
+            name: data.fullName,
+            email: data.email,
+            program: data.program,
+            section: data.section,
+          }
+        : current
+    );
+
+    setEditModalOpen(false);
     setShowModal(true);
   };
 
@@ -148,24 +230,23 @@ export default function InternPage() {
         )}
       </TableLayout>
       {showModal && selectedStudent && (
-        <Modal title="Intern Details" onClose={() => { setShowModal(false); setSelectedStudent(null); }}>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-6 p-6">
-            <DetailField label="Full Name" value={selectedStudent.name} />
-            <DetailField label="Student Number" value={selectedStudent.studentNumber} />
-            <DetailField label="Email" value={selectedStudent.email} />
-            <DetailField label="Program" value={selectedStudent.program} />
-            <DetailField label="Section" value={selectedStudent.section} />
-            <DetailField label="Contact Number" value={selectedStudent.contactNumber} />
-            {selectedStudent.hte && <DetailField label="HTE Company" value={selectedStudent.hte.companyName} />}
-            {selectedStudent.schedule && (
-              <>
-                <DetailField label="Expected Time In" value={selectedStudent.schedule.expectedTimeIn} />
-                <DetailField label="Expected Time Out" value={selectedStudent.schedule.expectedTimeOut} />
-                <DetailField label="Required Hours" value={String(selectedStudent.schedule.requiredHours)} />
-              </>
-            )}
-          </div>
-        </Modal>
+        <InternDetailsModal
+          student={selectedStudent}
+          onClose={closeDetailsModal}
+          onEdit={openEditModal}
+        />
+      )}
+
+      {editModalOpen && selectedStudent && (
+        <EditInternDetailsModal
+          student={selectedStudent}
+          sections={sectionOptions}
+          loading={editLoading}
+          errorMessage={editError}
+          onClose={closeDetailsModal}
+          onCancel={cancelEditModal}
+          onSave={handleSaveIntern}
+        />
       )}
     </main>
   );
