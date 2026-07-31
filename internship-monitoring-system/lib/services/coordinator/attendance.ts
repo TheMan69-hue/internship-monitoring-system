@@ -23,6 +23,9 @@ type AttendanceWithStudent = {
   student_id: string;
   date: string;
   status: string;
+  flagged_for_review: boolean;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
   time_in: string | null;
   time_out: string | null;
   location: string | null;
@@ -153,6 +156,9 @@ export async function getAssignedAttendance() {
       student_id,
       date,
       status,
+      flagged_for_review,
+      reviewed_by,
+      reviewed_at,
       time_in,
       time_out,
       location,
@@ -186,7 +192,17 @@ export async function getAssignedAttendance() {
 
   const mappedAttendance = (
     (attendance ?? []) as unknown as AttendanceWithStudent[]
-  ).map((record) => ({
+  ).map((record) => {
+
+  console.log({
+  id: record.id,
+  date: record.date,
+  student: record.students.name,
+  status: record.status,
+  flagged: record.flagged_for_review,
+});
+
+  return {
     id: record.id,
     studentId: record.student_id,
     studentNumber: record.students.student_number,
@@ -200,9 +216,13 @@ export async function getAssignedAttendance() {
     timeOut: formatTime(record.time_out),
     location: record.location_name_in,
     status: record.status,
+    flaggedForReview: record.flagged_for_review,
+    reviewedBy: record.reviewed_by,
+    reviewedAt: record.reviewed_at,
     gpsCoordinates:
       record.students.hte_companies_map?.gps_coordinates ?? null,
-  }));
+      };
+    });
 
   const grouped = new Map<string, AttendanceGroup>();
 

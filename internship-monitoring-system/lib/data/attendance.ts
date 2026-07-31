@@ -24,7 +24,10 @@ export const attendanceColumns = [
     key: "timeOut",
     header: "Time Out",
   },
-
+  {
+    key: "status",
+    header: "Status",
+  },
 ];
 export const attendanceLogs: AttendanceLog[] = [
   {
@@ -45,6 +48,9 @@ export const attendanceLogs: AttendanceLog[] = [
     location: "College of Information Technology",
 
     status: "Present",
+    flaggedForReview: false,
+    reviewedBy: null,
+    reviewedAt: null,
     gpsCoordinates: null,
   },
 
@@ -66,6 +72,9 @@ export const attendanceLogs: AttendanceLog[] = [
     location: "Accenture Building",
 
     status: "Late",
+    flaggedForReview: false,
+    reviewedBy: null,
+    reviewedAt: null,
     gpsCoordinates: null,
   },
 
@@ -87,6 +96,10 @@ export const attendanceLogs: AttendanceLog[] = [
     location: "Department of ICT",
 
     status: "Present",
+    flaggedForReview: false,
+    reviewedBy: null,
+    reviewedAt: null,
     gpsCoordinates: null,
   },
 ];
+

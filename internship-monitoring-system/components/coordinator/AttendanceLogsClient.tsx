@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import SearchInput from "@/components/search/SearchInput";
 import DataTable from "@/components/table/DataTable";
 import AttendanceDetailsModal from "@/components/modals/AttendanceDetailsModal";
-
+import ReviewAttendanceModal from "@/components/modals/ReviewAttendanceModal";
 import { attendanceColumns } from "@/lib/data/attendance";
 import type { AttendanceGroup } from "@/lib/types";
-
+import {
+  approveAttendanceAction,
+  rejectAttendanceAction,
+} from "@/lib/actions/attendance";
 type AttendanceLogsClientProps = {
   attendanceLogs: AttendanceGroup[];
 };
@@ -20,7 +24,9 @@ export default function AttendanceLogsClient({
 }: AttendanceLogsClientProps) {
   const [selectedAttendance, setSelectedAttendance] =
     useState<AttendanceGroup | null>(null);
-
+  const [reviewAttendance, setReviewAttendance] =
+    useState<AttendanceGroup | null>(null);
+  const router = useRouter();
   const [selectedProgram, setSelectedProgram] = useState("All");
   const [selectedSection, setSelectedSection] = useState("All");
   const [search, setSearch] = useState("");
@@ -167,6 +173,34 @@ export default function AttendanceLogsClient({
               <td className="px-6 py-4 text-[#374151]">
                 {latestAttendance.timeOut}
               </td>
+
+              <td className="px-6 py-4">
+                {latestAttendance.flaggedForReview ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReviewAttendance(student);
+                    }}
+                    className="rounded-full bg-yellow-100 px-3 py-1 text-sm font-semibold text-yellow-700 hover:bg-yellow-200"
+                  >
+                    To Review
+                  </button>
+                ) : (
+                  <span
+                    className={`font-medium ${
+                      latestAttendance.status === "Present"
+                        ? "text-green-600"
+                        : latestAttendance.status === "Late"
+                        ? "text-orange-500"
+                        : latestAttendance.status === "Incomplete"
+                        ? "text-red-600"
+                        : "text-[#374151]"
+                    }`}
+                  >
+                    {latestAttendance.status}
+                  </span>
+                )}
+              </td>
             </tr>
           );
         })}
@@ -204,6 +238,37 @@ export default function AttendanceLogsClient({
         <AttendanceDetailsModal
           attendance={selectedAttendance}
           onClose={() => setSelectedAttendance(null)}
+        />
+      )}
+
+      {reviewAttendance && (
+        <ReviewAttendanceModal
+          attendance={reviewAttendance.latestAttendance}
+          onClose={() => setReviewAttendance(null)}
+          onApprove={async () => {
+            const result = await approveAttendanceAction(
+              reviewAttendance.latestAttendance.id
+            );
+
+            if (result.success) {
+              setReviewAttendance(null);
+              router.refresh();
+            } else {
+              alert(result.message);
+            }
+          }}
+          onReject={async () => {
+            const result = await rejectAttendanceAction(
+              reviewAttendance.latestAttendance.id
+            );
+
+            if (result.success) {
+              setReviewAttendance(null);
+              router.refresh();
+            } else {
+              alert(result.message);
+            }
+          }}
         />
       )}
     </div>
