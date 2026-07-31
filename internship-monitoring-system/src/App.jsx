@@ -488,6 +488,16 @@ function App() {
     })
   }
 
+  async function handleChangePassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    })
+
+    if (error) {
+      throw error
+    }
+  }
+
   async function handleSignIn({ email, password, setFormMessage }) {
     setIsAuthBusy(true)
     setAuthNotice('')
@@ -818,6 +828,7 @@ function App() {
         }}
         onLogout={handleLogout}
         onPanelChange={setActiveProfilePanel}
+        onChangePassword={handleChangePassword}
         onSaveProfile={handleProfileSave}
         onSaveHte={handleHteSave}
         studentProfile={profile}

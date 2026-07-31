@@ -39,13 +39,44 @@ function EditableField({ label, name, value, onChange, type = 'text', onEdit, is
   )
 }
 
-function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout, onSaveProfile, onSaveHte, studentProfile }) {
+function PasswordField({ label, name, value, onChange, type = 'password', autoComplete }) {
+  return (
+    <label className="profile-password-field" htmlFor={name}>
+      <span>{label}</span>
+      <input
+        id={name}
+        className="profile-password-field__input"
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        autoComplete={autoComplete}
+      />
+    </label>
+  )
+}
+
+function ProfileSettings({
+  activePanel,
+  onOpenDashboard,
+  onPanelChange,
+  onLogout,
+  onSaveProfile,
+  onSaveHte,
+  onChangePassword,
+  studentProfile,
+}) {
   const isProfilePanel = activePanel === 'profile'
+  const isChangePasswordPanel = activePanel === 'change-password'
   const hte = studentProfile.hte ?? {}
   const [formValue, setFormValue] = useState({
     name: studentProfile.name ?? '',
     phoneNumber: studentProfile.phoneNumber ?? '',
     emailAddress: studentProfile.emailAddress ?? '',
+  })
+  const [passwordFormValue, setPasswordFormValue] = useState({
+    newPassword: '',
+    confirmPassword: '',
   })
   const [hteFormValue, setHteFormValue] = useState({
     name: hte.name ?? '',
@@ -56,7 +87,8 @@ function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout
   })
   const [editingField, setEditingField] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [saveMessage, setSaveMessage] = useState('')
+  const [profileStatusMessage, setProfileStatusMessage] = useState('')
+  const [passwordStatusMessage, setPasswordStatusMessage] = useState('')
   const [activeSemester, setActiveSemester] = useState(null)
 
   useEffect(() => {
@@ -159,7 +191,7 @@ function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout
   const handleSave = async (event) => {
     event.preventDefault()
     setIsSaving(true)
-    setSaveMessage('')
+    setProfileStatusMessage('')
 
     try {
       await onSaveProfile({
@@ -168,9 +200,63 @@ function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout
         emailAddress: formValue.emailAddress.trim(),
       })
 
-      setSaveMessage('Profile saved successfully.')
+      setProfileStatusMessage('Profile saved successfully.')
     } catch (error) {
-      setSaveMessage(error?.message || 'Unable to save profile changes.')
+      setProfileStatusMessage(error?.message || 'Unable to save profile changes.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handlePasswordFieldChange = (event) => {
+    const { name, value } = event.target
+
+    setPasswordFormValue((previousValue) => ({
+      ...previousValue,
+      [name]: value,
+    }))
+  }
+
+  const handleOpenChangePasswordPanel = () => {
+    setPasswordStatusMessage('')
+    onPanelChange('change-password')
+  }
+
+  const handleCancelPasswordChange = () => {
+    setPasswordFormValue({
+      newPassword: '',
+      confirmPassword: '',
+    })
+    setPasswordStatusMessage('')
+    onPanelChange('profile')
+  }
+
+  const handlePasswordSave = async (event) => {
+    event.preventDefault()
+    setPasswordStatusMessage('')
+
+    if (!passwordFormValue.newPassword || !passwordFormValue.confirmPassword) {
+      setPasswordStatusMessage('Please fill out both password fields.')
+      return
+    }
+
+    if (passwordFormValue.newPassword !== passwordFormValue.confirmPassword) {
+      setPasswordStatusMessage('Passwords do not match.')
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      await onChangePassword(passwordFormValue.newPassword)
+      setPasswordFormValue({
+        newPassword: '',
+        confirmPassword: '',
+      })
+      setProfileStatusMessage('Password updated successfully')
+      onPanelChange('profile')
+    } catch (error) {
+      setPasswordStatusMessage(error?.message || 'Unable to update password.')
     } finally {
       setIsSaving(false)
     }
@@ -325,9 +411,9 @@ function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout
 
         <div className="profile-settings-content">
           <div className="profile-detail-card">
-            <h2>{isProfilePanel ? 'Profile Details' : 'HTE Details'}</h2>
             {isProfilePanel ? (
               <form className="profile-detail-form" onSubmit={handleSave}>
+                <h2>Profile Details</h2>
                 <div className="profile-detail-list profile-detail-list--profile" aria-label="Profile details">
                   <DetailRow label="Student Number" value={studentProfile.studentNumber} />
                   <DetailRow label="Program" value={studentProfile.program} />
@@ -350,11 +436,48 @@ function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout
                   <button type="submit" className="profile-save" disabled={isSaving}>
                     {isSaving ? 'Saving...' : 'Save Changes'}
                   </button>
-                  {saveMessage ? <p className="profile-save-status" role="status">{saveMessage}</p> : null}
+                  <button type="button" className="profile-change-password" onClick={handleOpenChangePasswordPanel}>
+                    Change Password
+                  </button>
+                  {profileStatusMessage ? <p className="profile-save-status" role="status">{profileStatusMessage}</p> : null}
+                </div>
+              </form>
+            ) : isChangePasswordPanel ? (
+              <form className="profile-detail-form profile-detail-form--password" onSubmit={handlePasswordSave}>
+                <h2>Change Password</h2>
+                <p className="profile-panel-subtitle">Change Your Password</p>
+                <div className="profile-password-card">
+                  <div className="profile-password-fields">
+                    <PasswordField
+                      label="New Password"
+                      name="newPassword"
+                      value={passwordFormValue.newPassword}
+                      onChange={handlePasswordFieldChange}
+                      autoComplete="new-password"
+                    />
+                    <PasswordField
+                      label="Confirm Password"
+                      name="confirmPassword"
+                      value={passwordFormValue.confirmPassword}
+                      onChange={handlePasswordFieldChange}
+                      autoComplete="new-password"
+                    />
+                  </div>
+
+                  <div className="profile-actions">
+                    <button type="submit" className="profile-save" disabled={isSaving}>
+                      {isSaving ? 'Saving...' : 'Confirm'}
+                    </button>
+                    <button type="button" className="profile-cancel" onClick={handleCancelPasswordChange}>
+                      Cancel
+                    </button>
+                    {passwordStatusMessage ? <p className="profile-save-status" role="status">{passwordStatusMessage}</p> : null}
+                  </div>
                 </div>
               </form>
             ) : (
               <form className="profile-detail-form" onSubmit={handleHteSave}>
+                <h2>HTE Details</h2>
                 <div className="profile-detail-list profile-detail-list--profile" aria-label="HTE details">
                   {hteEditableRows.map((row) => (
                     <EditableField
@@ -374,7 +497,7 @@ function ProfileSettings({ activePanel, onOpenDashboard, onPanelChange, onLogout
                   <button type="submit" className="profile-save" disabled={isSaving}>
                     {isSaving ? 'Saving...' : 'Save Changes'}
                   </button>
-                  {saveMessage ? <p className="profile-save-status" role="status">{saveMessage}</p> : null}
+                  {profileStatusMessage ? <p className="profile-save-status" role="status">{profileStatusMessage}</p> : null}
                 </div>
               </form>
             )}
