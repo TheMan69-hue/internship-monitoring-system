@@ -67,7 +67,9 @@ function ProfileSettings({
   studentProfile,
 }) {
   const isProfilePanel = activePanel === 'profile'
+  const isHtePanel = activePanel === 'hte'
   const isChangePasswordPanel = activePanel === 'change-password'
+  const isProfileRelatedPanel = isProfilePanel || isChangePasswordPanel
   const hte = studentProfile.hte ?? {}
   const [formValue, setFormValue] = useState({
     name: studentProfile.name ?? '',
@@ -90,6 +92,13 @@ function ProfileSettings({
   const [profileStatusMessage, setProfileStatusMessage] = useState('')
   const [passwordStatusMessage, setPasswordStatusMessage] = useState('')
   const [activeSemester, setActiveSemester] = useState(null)
+
+  const panelTitle = isChangePasswordPanel ? 'Change Password' : isProfilePanel ? 'Profile Settings' : 'HTE Details'
+  const panelSubtitle = isChangePasswordPanel
+    ? 'Change Your Password'
+    : isProfilePanel
+      ? 'View and manage your account details'
+      : 'View and manage your host training establishment details'
 
   useEffect(() => {
     const fetchActiveSemester = async () => {
@@ -364,7 +373,7 @@ function ProfileSettings({
           </button>
           <button
             type="button"
-            className={isProfilePanel ? 'profile-tabs__button profile-tabs__button--active' : 'profile-tabs__button'}
+            className={isProfileRelatedPanel ? 'profile-tabs__button profile-tabs__button--active' : 'profile-tabs__button'}
             onClick={() => onPanelChange('profile')}
           >
             <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
@@ -374,7 +383,7 @@ function ProfileSettings({
           </button>
           <button
             type="button"
-            className={!isProfilePanel ? 'profile-tabs__button profile-tabs__button--active' : 'profile-tabs__button'}
+            className={isHtePanel ? 'profile-tabs__button profile-tabs__button--active' : 'profile-tabs__button'}
             onClick={() => onPanelChange('hte')}
           >
             <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
@@ -393,11 +402,11 @@ function ProfileSettings({
         </button>
       </aside>
 
-      <section className="profile-main-area" aria-label={isProfilePanel ? 'Profile details' : 'HTE details'}>
+      <section className="profile-main-area" aria-label={isChangePasswordPanel ? 'Change password' : isProfilePanel ? 'Profile details' : 'HTE details'}>
         <header className="profile-page-header">
           <div>
-            <h1>{isProfilePanel ? 'Profile Settings' : 'HTE Details'}</h1>
-            <p>{isProfilePanel ? 'View and manage your account details' : 'View and manage your host training establishment details'}</p>
+            <h1>{panelTitle}</h1>
+            <p>{panelSubtitle}</p>
           </div>
           <div className="profile-header-meta">
             <span>Academic Year</span>
