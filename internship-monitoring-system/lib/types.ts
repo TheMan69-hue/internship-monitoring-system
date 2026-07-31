@@ -92,18 +92,64 @@ export interface AttendanceGroup {
   attendanceHistory: AttendanceLog[];
 }
 
-export interface Program {
-  id: string;
-  programName: string;
-}
-
-export interface Section {
-  id: string;
-  sectionName: string;
-}
 export interface CoordinatorAssignment {
   id: string;
   coordinatorId: string;
   programId: string;
   sectionId: string;
+}
+
+export type Intern = {
+  id: string;
+  name: string;
+  email: string;
+  course: string;
+  academicYear: string;
+  semester: '1st' | '2nd' | 'summer';
+  status: 'active' | 'inactive' | 'completed' | 'pending';
+  section: string;
+  hte?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export type Coordinator = {
+  id: string;
+  name: string;
+  email: string;
+  contact_num: string;
+  role: 'admin' | 'coordinator' | 'student';
+  password: string;
+  is_active: boolean;
+  created_by?: string;
+  created_at?: string;
+  sections?: string[];
+}
+
+export type Section = {
+  id: string;
+  program_id: string;
+  school_year: string;
+  name: string;
+  coordinator_id: string;
+  created_at: string;
+}
+
+export type SchoolYear = {
+  id: string;
+  schoolYearId: string;
+  academicYear: string;
+  semester?: '1st' | '2nd' | 'midyear';
+  is_active: boolean;
+  status: 'active' | 'inactive';
+  startDate?: string;
+  endDate?: string;
+}
+
+export type Program = {
+  id: string;
+  name: string;
+  required_hours: number;
+  Total_Interns?: number;
+  Total_Coordinator?: number
 }

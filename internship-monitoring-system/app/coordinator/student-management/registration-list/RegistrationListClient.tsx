@@ -610,7 +610,6 @@ export default function RegistrationListClient({
 
           <button
             onClick={() => {
-              console.log("Bulk Reject Button Clicked");
               setBulkReject(true);
               setShowRejectModal(true);
             }}

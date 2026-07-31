@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-import SearchBar from "@/components/search/SearchBar";
+import SearchInput from "@/components/search/SearchInput";
 import DataTable from "@/components/table/DataTable";
 import RegistrationDetailsModal from "@/components/modals/RegistrationDetailsModal";
 import ActionModal from "@/components/modals/ActionModal";
@@ -46,27 +46,7 @@ export default function RejectedApplicationsClient({
   const [selectedStudent, setSelectedStudent] =
     useState<RejectedStudent | null>(null);
 
-  const [search, setSearch] = useState("");
   const router = useRouter();
-
-  const filteredStudents = useMemo(() => {
-    const keyword = search.toLowerCase().trim();
-
-    if (!keyword) return students;
-
-    return students.filter((student) => {
-      const hte =
-        student.hte_companies?.[0]?.company_name ?? "";
-
-      return (
-        student.student_number.toLowerCase().includes(keyword) ||
-        student.name.toLowerCase().includes(keyword) ||
-        student.program.toLowerCase().includes(keyword) ||
-        student.section.toLowerCase().includes(keyword) ||
-        hte.toLowerCase().includes(keyword)
-      );
-    });
-  }, [students, search]);
   const [showActionModal, setShowActionModal] =
     useState(false);
 
@@ -83,6 +63,8 @@ export default function RejectedApplicationsClient({
   
   const [showDeleteConfirmation, setShowDeleteConfirmation] =
    useState(false);
+
+  const [search, setSearch] = useState("");
   
   const showMessage = (
     type: "success" | "error",
@@ -162,6 +144,14 @@ export default function RejectedApplicationsClient({
 
   };
 
+  const filteredStudents = students.filter((student) => {
+    if (search === "") return true;
+    return (
+      student.name.toLowerCase().includes(search.toLowerCase()) ||
+      student.student_number.toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
   return (
 
     <div className="rounded-[20px] bg-white p-6 shadow-sm">
@@ -171,9 +161,10 @@ export default function RejectedApplicationsClient({
       </h2>
 
       <div className="mb-6 flex justify-end">
-        <SearchBar
+        <SearchInput
           value={search}
           onChange={setSearch}
+          placeholder="Search student number or name..."
         />
       </div>
 

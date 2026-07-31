@@ -1,12 +1,21 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { coordinatorMenu } from "@/lib/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 export default function Sidebar() {
   const [studentOpen, setStudentOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
   return (
     <aside className="w-64 bg-white border-r h-screen flex flex-col">
       {/* Logo */}
@@ -131,9 +140,11 @@ export default function Sidebar() {
       </nav>
 
       {/* Logout */}
-      {/* Logout */}
       <div className="p-4 border-t">
-        <button className="w-full rounded-[20px] bg-[#CDCDCD] py-2 text-[#000000] hover:bg-[#696969] transition-colors duration-200">
+        <button
+          onClick={handleLogout}
+          className="w-full rounded-[20px] bg-[#CDCDCD] py-2 text-[#000000] hover:bg-[#696969] transition-colors duration-200"
+        >
           Logout
         </button>
       </div>

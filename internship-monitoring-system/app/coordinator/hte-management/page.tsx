@@ -1,12 +1,8 @@
-import { getHTEs } from "@/lib/services/hte";
+import { getHTEList } from "@/lib/services/coordinator/hte";
 import HTEManagementClient from "./HTEManagementClient";
 
 export default async function HTEManagementPage() {
-  const htes = await getHTEs();
+  const htes = await getHTEList();
 
-  return (
-    <HTEManagementClient
-      initialHTEs={htes}
-    />
-  );
+  return <HTEManagementClient initialHTes={htes} />;
 }

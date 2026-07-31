@@ -87,6 +87,23 @@ export async function getDashboardStats() {
     item => item.section_id
   );
 
+  // Get program names for the assigned program IDs
+  const {
+    data: programRows,
+    error: programError,
+  } = await supabase
+    .from("programs")
+    .select("id, program_name")
+    .in("id", programIds);
+
+  if (programError) {
+    throw programError;
+  }
+
+  const programNames = (programRows ?? []).map(
+    (p) => p.program_name
+  );
+
   const {
     data: students,
     error: studentError
@@ -121,6 +138,26 @@ export async function getDashboardStats() {
   if(hteError){
     throw hteError;
   }
+  // Count pending registrations for coordinator's programs
+  let pendingInternship = 0;
+
+  if (programNames.length > 0) {
+    const {
+      count,
+      error: pendingError,
+    } = await supabase
+      .from("student_registrations")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "Pending")
+      .in("program", programNames);
+
+    if (pendingError) {
+      throw pendingError;
+    }
+
+    pendingInternship = count ?? 0;
+  }
+
   return {
 
     totalStudents:
@@ -133,9 +170,8 @@ export async function getDashboardStats() {
       studentList.filter(
         student => student.hte_id === null
       ).length,
-      
-    // placeholder until internship table exists
-    pendingInternship: 0
+
+    pendingInternship,
 
   };
 

@@ -28,7 +28,7 @@ export async function updateStudentWorkSchedule(
 ) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("student_work_schedules")
     .upsert(
       {
@@ -42,9 +42,6 @@ export async function updateStudentWorkSchedule(
       }
     )
     .select();
-
-  console.log("UPSERT RESULT:", data);
-  console.log("UPSERT ERROR:", error);
 
   if (error) {
     throw error;

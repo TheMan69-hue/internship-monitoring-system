@@ -8,12 +8,6 @@ export default async function RegistrationListPage() {
   const registrations = await getRegistrationList();
 
 
-  console.log(
-    "REGISTRATIONS:",
-    registrations
-  );
-
-
   return (
     <RegistrationListClient
       registrations={registrations}

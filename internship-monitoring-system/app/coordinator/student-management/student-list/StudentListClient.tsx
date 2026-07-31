@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-import SearchBar from "@/components/search/SearchBar";
+import SearchInput from "@/components/search/SearchInput";
 import DataTable from "@/components/table/DataTable";
 
 import StudentDetailsModal from "@/components/modals/StudentDetailsModal";
@@ -19,42 +19,51 @@ type StudentListClientProps = {
 export default function StudentListClient({
   students,
 }: StudentListClientProps) {
-    const [selectedStudent, setSelectedStudent] =
+  const [selectedStudent, setSelectedStudent] =
     useState<Student | null>(null);
 
-    const [search, setSearch] = useState("");
+  const [programFilter, setProgramFilter] = useState("All");
+  const [sectionFilter, setSectionFilter] = useState("All");
+  const [hteFilter, setHteFilter] = useState("All");
+  const [search, setSearch] = useState("");
 
-    const filteredStudents = useMemo(() => {
-        const keyword = search.toLowerCase().trim();
+  const programs = [
+    "All",
+    ...new Set(students.map((s) => s.program)),
+  ];
 
-        if (!keyword) return students;
+  const sections = [
+    "All",
+    ...new Set(students.map((s) => s.section)),
+  ];
 
-        return students.filter((student) => {
-            const hte = student.hte?.companyName ?? "";
+  const htes = [
+    "All",
+    ...new Set(
+      students.map((s) => s.hte?.companyName ?? "No HTE")
+    ),
+  ];
 
-            return (
-            student.studentNumber
-                .toLowerCase()
-                .includes(keyword) ||
+  const filteredStudents = students.filter((student) => {
+    const matchesProgram =
+      programFilter === "All" ||
+      student.program === programFilter;
 
-            student.name
-                .toLowerCase()
-                .includes(keyword) ||
+    const matchesSection =
+      sectionFilter === "All" ||
+      student.section === sectionFilter;
 
-            student.program
-                .toLowerCase()
-                .includes(keyword) ||
+    const matchesHTE =
+      hteFilter === "All" ||
+      (student.hte?.companyName ?? "No HTE") === hteFilter;
 
-            student.section
-                .toLowerCase()
-                .includes(keyword) ||
+    const matchesSearch =
+      search === "" ||
+      student.name.toLowerCase().includes(search.toLowerCase()) ||
+      student.studentNumber.toLowerCase().includes(search.toLowerCase());
 
-            hte
-                .toLowerCase()
-                .includes(keyword)
-            );
-        });
-        }, [students, search]);
+    return matchesProgram && matchesSection && matchesHTE && matchesSearch;
+  });
 
   return (
     <div className="rounded-[20px] bg-white p-6 shadow-sm">
@@ -72,8 +81,16 @@ export default function StudentListClient({
                 <label className="mb-1 block text-sm text-[#374151]">
                     Program
                 </label>
-                <select className="w-40 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]">
-                    <option>All</option>
+                <select
+                  value={programFilter}
+                  onChange={(e) => setProgramFilter(e.target.value)}
+                  className="w-40 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]"
+                >
+                    {programs.map((program) => (
+                      <option key={program} value={program}>
+                        {program}
+                      </option>
+                    ))}
                 </select>
             </div>
 
@@ -82,8 +99,16 @@ export default function StudentListClient({
                     Section
                 </label>
 
-                <select className="w-40 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]">
-                    <option>All</option>
+                <select
+                  value={sectionFilter}
+                  onChange={(e) => setSectionFilter(e.target.value)}
+                  className="w-40 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]"
+                >
+                    {sections.map((section) => (
+                      <option key={section} value={section}>
+                        {section}
+                      </option>
+                    ))}
                 </select>
             </div>
 
@@ -92,16 +117,25 @@ export default function StudentListClient({
                     HTE
                 </label>
 
-                <select className="w-52 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]">
-                    <option>All</option>
+                <select
+                  value={hteFilter}
+                  onChange={(e) => setHteFilter(e.target.value)}
+                  className="w-52 rounded-lg border border-[#D1D5DB] px-3 py-2 text-[#374151]"
+                >
+                    {htes.map((hte) => (
+                      <option key={hte} value={hte}>
+                        {hte}
+                      </option>
+                    ))}
                 </select>
             </div>
 
         </div>
 
-        <SearchBar
-            value={search}
-            onChange={setSearch}
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search student number or name..."
         />
 
         </div>
