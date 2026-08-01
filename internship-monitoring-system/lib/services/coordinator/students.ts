@@ -35,96 +35,72 @@ type StudentWithHTE = {
 };
 
 export async function getAssignedStudents() {
-
   const supabase = await createClient();
 
   // Get logged in user
   const {
-    data:{
-      user
-    }
+    data: { user },
   } = await supabase.auth.getUser();
 
-  if(!user){
+  if (!user) {
     throw new Error("User not authenticated");
   }
 
   // Get profile
-
   const {
-    data:profile,
-    error:profileError
+    data: profile,
+    error: profileError,
   } = await supabase
     .from("profiles")
     .select("id")
-    .eq(
-      "user_id",
-      user.id
-    )
+    .eq("user_id", user.id)
     .single();
 
-  if(profileError || !profile){
+  if (profileError || !profile) {
     throw new Error("Profile not found");
   }
 
   // Get coordinator
-
   const {
-    data:coordinator,
-    error:coordinatorError
+    data: coordinator,
+    error: coordinatorError,
   } = await supabase
     .from("coordinators")
     .select("id")
-    .eq(
-      "profile_id",
-      profile.id
-    )
+    .eq("profile_id", profile.id)
     .single();
 
-  if(coordinatorError || !coordinator){
+  if (coordinatorError || !coordinator) {
     throw new Error("Coordinator not found");
   }
 
   // Get coordinator assignments
-
   const {
-    data:assignments,
-    error:assignmentError
+    data: assignments,
+    error: assignmentError,
   } = await supabase
     .from("coordinator_assignments")
     .select(`
       program_id,
       section_id
     `)
-    .eq(
-      "coordinator_id",
-      coordinator.id
-    );
+    .eq("coordinator_id", coordinator.id);
 
-  if(assignmentError){
+  if (assignmentError) {
     throw assignmentError;
   }
 
-  if(!assignments || assignments.length === 0){
+  if (!assignments || assignments.length === 0) {
     return [];
   }
 
-  const programIds =
-    assignments.map(
-      item=>item.program_id
-    );
-
-
-  const sectionIds =
-    assignments.map(
-      item=>item.section_id
-    );
+  const programIds = assignments.map((item) => item.program_id);
+  const sectionIds = assignments.map((item) => item.section_id);
 
   // Get students
-
   const {
-    data:students,
-    error:studentError
+    data: students,
+    error: studentError,
   } = await supabase
     .from("students")
     .select(`
@@ -160,44 +136,30 @@ export async function getAssignedStudents() {
         grace_minutes
       )
     `)
-    .in(
-      "program_id",
-      programIds
-    )
-    .in(
-      "section_id",
-      sectionIds
-    );
+    .in("program_id", programIds)
+    .in("section_id", sectionIds);
 
-  if(studentError){
+  if (studentError) {
     throw studentError;
   }
-  
-  const mappedStudents = ((students ?? []) as unknown as StudentWithHTE[])
-  .map((student) => ({
 
-    id: student.id,
+  const mappedStudents = ((students ?? []) as unknown as StudentWithHTE[]).map(
+    (student) => ({
+      id: student.id,
 
-    studentNumber: student.student_number,
+      studentNumber: student.student_number,
 
-    name: student.name,
+      name: student.name,
 
-    program:
-      student.program?.program_name ??
-      "Unknown",
+      program: student.program?.program_name ?? "Unknown",
 
-    section:
-      student.section?.section_name ??
-      "Unknown",
+      section: student.section?.section_name ?? "Unknown",
 
-    email:
-      student.email_address,
+      email: student.email_address,
 
-    contactNumber:
-      student.phone_number,
+      contactNumber: student.phone_number,
 
-    hte:
-      student.hte_companies
+      hte: student.hte_companies
         ? {
             id: student.hte_companies.id,
             companyName: student.hte_companies.company_name,
@@ -209,25 +171,20 @@ export async function getAssignedStudents() {
           }
         : null,
 
-    schedule:
-      student.student_work_schedules
+      schedule: student.student_work_schedules
         ? {
             expectedTimeIn:
               student.student_work_schedules.expected_time_in,
-
             expectedTimeOut:
               student.student_work_schedules.expected_time_out,
-
             requiredHours:
               student.student_work_schedules.required_hours,
-
             graceMinutes:
               student.student_work_schedules.grace_minutes,
           }
         : null,
+    })
+  );
 
-  }));
-
-return mappedStudents;
-
+  return mappedStudents;
 }

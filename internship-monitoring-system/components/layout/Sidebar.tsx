@@ -10,19 +10,17 @@ export default function Sidebar() {
   const [greetingName, setGreetingName] = useState("Coordinator");
   const pathname = usePathname();
   const router = useRouter();
-
   useEffect(() => {
     let cancelled = false;
 
     const loadGreetingName = async () => {
       const supabase = createClient();
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user || cancelled) {
-        return;
-      }
+      if (!user || cancelled) return;
 
       const { data: profileRow } = await supabase
         .from("profiles")
@@ -31,7 +29,11 @@ export default function Sidebar() {
         .maybeSingle();
 
       if (!cancelled) {
-        setGreetingName(profileRow?.full_name ?? user.user_metadata?.full_name ?? "Coordinator");
+        setGreetingName(
+          profileRow?.full_name ??
+            user.user_metadata?.full_name ??
+            "Coordinator"
+        );
       }
     };
 
@@ -42,12 +44,19 @@ export default function Sidebar() {
     };
   }, []);
 
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
+  const supabase = createClient();
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error("Logout failed:", error.message);
+      return;
+    }
+
+    router.push("/login");
+    router.refresh();
+  };
   return (
     <aside className="w-64 bg-white border-r h-screen flex flex-col">
       {/* Logo */}

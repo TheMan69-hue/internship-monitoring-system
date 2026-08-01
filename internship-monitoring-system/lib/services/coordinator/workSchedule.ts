@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function getStudentWorkSchedule(studentId: string) {
   const supabase = await createClient();
@@ -26,9 +27,7 @@ export async function updateStudentWorkSchedule(
   expectedTimeOut: string,
   requiredHours: number
 ) {
-  const supabase = await createClient();
-
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from("student_work_schedules")
     .upsert(
       {
@@ -40,8 +39,7 @@ export async function updateStudentWorkSchedule(
       {
         onConflict: "student_id",
       }
-    )
-    .select();
+    );
 
   if (error) {
     throw error;
