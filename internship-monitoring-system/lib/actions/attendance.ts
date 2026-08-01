@@ -11,7 +11,8 @@ export async function approveAttendanceAction(
   try {
     await approveAttendance(attendanceId);
 
-    revalidatePath("/coordinator/attendance-logs");
+    revalidatePath("/coordinator/student-management/attendance-logs");
+    revalidatePath("/admin/attendance-review");
 
     return {
       success: true,
@@ -33,7 +34,8 @@ export async function rejectAttendanceAction(
   try {
     await rejectAttendance(attendanceId);
 
-    revalidatePath("/coordinator/attendance-logs");
+    revalidatePath("/coordinator/student-management/attendance-logs");
+    revalidatePath("/admin/attendance-review");
 
     return {
       success: true,

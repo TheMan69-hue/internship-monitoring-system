@@ -15,12 +15,16 @@ import {
 } from "@/lib/actions/attendance";
 type AttendanceLogsClientProps = {
   attendanceLogs: AttendanceGroup[];
+  title?: string;
+  subtitle?: string;
 };
 
 const PAGE_SIZE = 10;
 
 export default function AttendanceLogsClient({
   attendanceLogs,
+  title = "Attendance Logs",
+  subtitle,
 }: AttendanceLogsClientProps) {
   const [selectedAttendance, setSelectedAttendance] =
     useState<AttendanceGroup | null>(null);
@@ -74,9 +78,14 @@ export default function AttendanceLogsClient({
 
   return (
     <div className="rounded-[20px] bg-white p-6 shadow-sm">
-      <h2 className="mb-6 text-3xl font-semibold text-[#111827]">
-        Attendance Logs
-      </h2>
+      <div className="mb-6">
+        <h2 className="text-3xl font-semibold text-[#111827]">
+          {title}
+        </h2>
+        {subtitle ? (
+          <p className="mt-2 text-sm text-[#6B7280]">{subtitle}</p>
+        ) : null}
+      </div>
 
       {/* Filters */}
       <div className="mb-6 flex items-center justify-between">

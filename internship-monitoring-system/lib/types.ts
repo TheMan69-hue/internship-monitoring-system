@@ -44,6 +44,9 @@ export interface Student {
     requiredHours: number;
     graceMinutes: number;
   } | null;
+
+  renderedHours?: number | null;
+  totalHours?: number | null;
 }
 
 export interface HTE {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import TableLayout from "@/components/layout/TablePageLayout";
 import ReusableTable from "@/components/table/Table";
@@ -17,7 +17,7 @@ type AdminProgram = {
   Total_Coordinator?: number;
 };
 
-export default function ProgramListPage() {
+function ProgramListContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const semesterName = searchParams.get("semesterName") ?? "Unknown Semester";
@@ -169,5 +169,13 @@ export default function ProgramListPage() {
         />
       )}
     </main>
+  );
+}
+
+export default function ProgramListPage() {
+  return (
+    <Suspense fallback={<div className="p-5">Loading...</div>}>
+      <ProgramListContent />
+    </Suspense>
   );
 }

@@ -29,7 +29,13 @@ const adminRoutes: AdminRoute[] = [
       { label: 'Registration List', href: '/admin/registration/registration-list', icon: <FileUser/> },
     ],
   },
-  { label: 'Intern', href: '/admin/intern', icon: <Users/> },
+  {
+    label: 'Intern', icon: <Users/>,
+    children: [
+      { label: 'Intern List', href: '/admin/intern', icon: <Users/> },
+      { label: 'Attendance Review', href: '/admin/attendance-review', icon: <FileUser/> },
+    ],
+  },
   { label: 'OJT Coordinator', href: '/admin/ojt-coordinator', icon: <UserStar/> },
   { label: 'HTE Management', href: '/admin/admin-hte-management', icon: <UserStar/> },
 ];

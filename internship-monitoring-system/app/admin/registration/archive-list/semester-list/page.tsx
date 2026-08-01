@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import TableLayout from "@/components/layout/TablePageLayout";
 import ReusableTable from "@/components/table/Table";
@@ -24,7 +24,7 @@ type SemesterRow = {
   schoolYearName: string;
 };
 
-export default function SemesterListPage() {
+function SemesterListContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const schoolYearId = searchParams.get("schoolYearId") ?? "";
@@ -209,5 +209,13 @@ export default function SemesterListPage() {
         />
       )}
     </main>
+  );
+}
+
+export default function SemesterListPage() {
+  return (
+    <Suspense fallback={<div className="p-5">Loading...</div>}>
+      <SemesterListContent />
+    </Suspense>
   );
 }

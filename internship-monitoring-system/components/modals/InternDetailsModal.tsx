@@ -33,6 +33,12 @@ export default function InternDetailsModal({
               <DetailField label="Required Hours" value={String(student.schedule.requiredHours)} />
             </>
           )}
+          {typeof student.renderedHours === "number" || typeof student.totalHours === "number" ? (
+            <DetailField
+              label="Progress"
+              value={`${(student.renderedHours ?? 0)} / ${(student.totalHours ?? 0)} hours`}
+            />
+          ) : null}
         </div>
 
         <div className="flex justify-end border-t pt-4">
